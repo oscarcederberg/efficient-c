@@ -1,0 +1,115 @@
+Hello and very welcome to EDAG01 Efficient C!
+
+This is intended to be the only email I send to all participants and additional announcements will be written to a Discord text channel (see below) but you are welcome to ask me about the course using email.
+
+I am excited to help you become a knowledgeable C programmer!
+
+You will also learn about computer architecture and a method to improve the performance of C programs.
+
+A lot of the course is about the lab series and project in which you will write a program to optimize integer linear programs (using simplex and branch-and-bound). The reason for using this topic is that it is a relatively small project which will expose you to many aspects of C such as floating point computing, memory allocation, and data structures in C. The difference in performance between your first working version and the fastest implementation in the course is likely to be huge and you can check how you are doing with a highscore list (anonymous except for the ten best solutions). See below. Comparing with others and using profilers will give you many insights. You will also use a so called pipeline simulator from IBM so you can see exactly what takes time in your program. The level of detail is what happens each clock cycle in an IBM POWER8 pipeline.
+
+After the labs are done the project is very easy to complete: analyse the performance of your program and write a short report (less than one A4 page). It should explain what takes time, and why, and what could be improved. You don't need to implement the improvements.
+
+The course will be given both online and with lectures in MA:5. The labs will use Discord and office hours will use Zoom.
+
+The course web site is https://cs.lth.se/edag01
+
+If you want to do the labs alone, pls write that in #solo-laboranter in Discord and pair up with somebody else before reserving a time slot.
+
+To sign up for a lab group: (please write both you and your lab partner on the same line!)
+
+https://sam.cs.lth.se/LabsSelectSession?occasionId=722
+
+There is a Tresorit cloud directory with useful files, e.g. Appendix B of the course book with pseudo code for the labs and project.
+
+https://web.tresorit.com/l/NRNW0#kPzc5_cvrnVgTEE95PqnoQ
+
+Tresorit is a Swiss company with an encrypted distributed file system that you can access from your computer and phone. Everything is synced automatically. 
+
+There are apps for Tresorit for both phones and computers (including Linux) but it is sufficient to use a browser.
+
+If you are new to using a Mac or Linux terminal program I recommend you to read Appendix A (see Tresorit).
+
+If you use Windows, the best option is either to access the LTH Linux computers with ssh (see the appendix) or install the Windows subsystem for Ubuntu. There are many youtube videos for how to install the Ubuntu app on Windows. It basically consists of three steps: (1) enable developer mode from settings, (2) from the control panel, enable Windows subsystem for Linux, and (3) install the Ubuntu app from the Microsoft store.
+
+When you have done that, you probably want to use a familiar program to write your source code and then run the program from the Ubuntu app terminal. Such programs are called "editors" and Sublime and Atom are popular. Vim is another alternative. Vim take more time to learn but in the long term probably will make you more productive. I prefer the original vi program called "nvi" from Berkeley.
+
+On macOS the https://brew.sh/ site provides useful terminal programs also found on Linux.
+
+If you use Ubuntu on Windows, you may find this video useful: https://www.youtube.com/watch?v=GsR4e3B8SnI
+It explains how you can use a normal editor on Windows with the Ubuntu files. A summary of the video is: you can start out in the Ubuntu terminal and then do "cd /mnt/c/Users/you" to get to your Windows files from Ubuntu.
+
+The course book is available from Amazon:
+https://www.amazon.de/Writing-Efficient-Code-thorough-introduction/dp/1659599202/
+
+To book an office hours zoom meeting, use:
+https://calendly.com/forsete/office-hours
+
+It is for both oral exam and asking questions.
+
+There are two options for taking the exam. Either written OR oral. The written is in January. The advantage for you to take an oral is that you can select the day yourself, change the day as you wish, and do a retake exam if needed (studying at least one more week) when you wish. If you would fail the written exam, you will have to do another written exam when offered as usual. I think oral exams are far better (and Dijkstra did as well :)
+
+If you want to take the written exam, sign up for it in Ladok as usual. If you instead want take an oral exam, you should not sign up in Ladok but just reserve a time slot at Calendly.
+
+Almost always (I think) all stress disappears quickly during the oral exam. It is like a discussion but I will obviously ask questions to determine how much you understand and know.
+
+If you feel really awkward about oral exams but decide to take it anyway, you can inform me at the exam and I will then ask the questions in a different way to try to avoid unnecessary stress by formulating the questions differently. If you wish you can also sign up for a "test oral exam" to see what it would be like (one student did that and concluded it would work out nicely (which it did)).
+
+There will be no "live coding" questions in the oral exam. For the written exam you can bring one book, and for the oral you can in addition bring eight pages of hand written notes (which you can consult before answering).
+
+See Tresorit for example questions.
+
+You need to have passed assignments, labs and project before taking the exam but you can sign up any day.
+
+My Zoom:
+https://lu-se.zoom.us/s/9445128153
+
+Discord server: 
+https://discord.gg/FS24YCryU2
+
+To make the lab presentations more efficient, you should use your full name as user name on Discord.
+
+You can ask me questions using an office hour, email or Discord. At Discord you can either use the text channel "general" or a private message to me. If you think the question is relevant to others please use the text channel.
+
+When you want help or present a lab, enter a Discord voice channel, and write the channel number, and your and your partner's name in the channel #redovisa (or #help).
+
+Don't ask questions in #help since they will be removed.
+
+There is also a text channel to find a lab partner, and one for pairing up persons who actually want to work alone.
+
+In the video title there is a LEVEL. This indicates for which grade this is relevant. It is perfectly fine to skip all level 5 videos if you don't aim at a 5 for instance.
+
+My youtube channel is: 
+https://www.youtube.com/channel/UC3stBkbGaerSBDqKfe-NKsg
+
+The lecture playlists are at https://cs.lth.se/edag01
+
+The lectures are in MA:5 and will cover the same topics so you will not miss anything essential if you skip MA:5.
+
+There are three programming assignments RPN, WORD, and POLY. See assignments.pdf in Tresorit.
+
+Info about the labs is at cs.lth.se/edag01 (at the bottom) but will be collected in a pdf soon.
+
+In the labs, you will create a program for optimizing integer linear programs, called INTOPT, using the simplex algorithm and branch-and-bound.
+
+You will also learn how to make your program faster by using profiling tools and write a one page A4 report about your program, and submit it to the automatic grader Forsete which will show highscore lists (ten best submissions with stilid and all submissions anonymously).
+
+There are two competitions: making RPN, WORD, and POLY as memory efficient as possible (more about that later) and INTOPT as fast as possible (meaning being able to correctly find the optimal value of as many integer linear programs as possible in two minutes).
+
+RPN, WORD, and POLY are done individually and INTOPT in groups with at most two persons.
+
+The prize in each competition is a coffe mug with your name on it.
+
+Forsete (an automatic grader for C programs) is used for highscore and grading (pass/fail):
+https://forsete.cs.lth.se 
+
+It is not up yet for EDAG01 but will soon be. You can submit solutions any number of times (at most 100,000 times, actually).
+
+The deadline for the competitions is December 23rd, at 18:00 but there is no deadline otherwise (except that you need to have finished the assignments, labs and project to take the exam).
+
+You will get an email from Forsete with username and password to the POWER8 machine power.cs.lth.se where you should do some of the labs.
+
+Again, welcome to this course!
+
+Best Regards,
+Jonas Skeppstedt
