@@ -84,14 +84,86 @@ void free_poly(poly_t* p){
 }
 
 poly_t*	mul(poly_t* p1, poly_t* p2){
-    int terms = 1;
-    int* coefs = malloc(sizeof(int) * terms);
-    int* expos = malloc(sizeof(int) * terms);
+    int max_terms = p1->terms * p2->terms;
+    int* coefs = calloc(max_terms, sizeof(int));
+    int* expos = calloc(max_terms, sizeof(int));
+
+    int  p1_terms = p1->terms;
+    int* p1_coefs = p1->coefs;
+    int* p1_expos = p1->expos;
+    int  p2_terms = p2->terms;
+    int* p2_coefs = p2->coefs;
+    int* p2_expos = p2->expos;
 
     poly_t* product = malloc(sizeof(poly_t));
-
+    product->terms = 0;
+    product->coefs = calloc(max_terms, sizeof(int));
+    product->expos = calloc(max_terms, sizeof(int));
     
+    int x, y, i = 0;
+    for (x = 0; x < p1_terms; ++x)
+    {
+        int p1_coef = p1_coefs[x];
+        int p1_expo = p1_expos[x];
+        for (y = 0; y < p2_terms; ++y)
+        {
+            product->coefs[i] = p1_coef * p2_coefs[y];
+            product->expos[i] = p1_expo + p2_expos[y];
+            i++;
+        }
+    }
 
+    int coef, expo, terms = 0;
+    for (x = 0; x < max_terms; x++)
+    {
+        coef = product->coefs[x];
+        expo = product->expos[x];   
+        for (y = 0; y < x + 1; y++)
+        {
+            if(y == x){
+                terms++;
+                coefs[y] = coef;
+                expos[y] = expo;
+                break;
+            }
+            if(expos[y] == expo){
+                coefs[y] += coef;
+                break;
+            }
+        }
+    }
+
+    //bubble sort with two arrays
+    int largest_expo, last_expo = __INT_MAX__;
+    int term = -1;
+    for (size_t x = 0; x < terms; x++)
+    {
+        i = 0;    
+        largest_expo = 0;
+        for (y = 0; y < terms; y++)
+        {
+            expo = expos[y];
+            if(expo > largest_expo && expo < last_expo){
+                largest_expo = expo;
+                i = y;
+            }
+        }
+
+        coef = coefs[i];
+        if(coef != 0){
+            term++;
+            product->coefs[term] = coef;
+            product->expos[term] = largest_expo;
+        }
+        last_expo = largest_expo;
+    }
+
+    product->terms = term;
+    product->coefs = realloc(product->coefs, sizeof(int) * term);
+    product->expos = realloc(product->expos, sizeof(int) * term);
+
+    free(coefs);
+    free(expos);
     return product;
 }
 
@@ -122,6 +194,8 @@ void print_poly(poly_t* p){
         
         if(i != terms - 1){
             printf(" ");
+        }else{
+            printf("\n");
         }
-    }  
+    } 
 }
