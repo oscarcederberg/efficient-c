@@ -16,7 +16,7 @@ int current_char;
 
 poly_t*	new_poly_from_string(const char* string){
     poly_t* poly = malloc(sizeof(poly_t));
-    int coef, expo, terms = 1;
+    int coef, expo, sign, terms = 1;
 
     poly->terms = 0;
     poly->coefs = malloc(sizeof(int) * terms);
@@ -26,25 +26,31 @@ poly_t*	new_poly_from_string(const char* string){
     while(1){
         coef = 1;
         expo = 0;
+        sign = 1;
         
         // check sign
         if(current_char == '-'){
-            coef = -1;
-            string++; // skip space
+            sign = -1;
             current_char = *(string++);
+            if(current_char == ' '){
+                current_char = *(string++); // skip space
+            }
         }else if(current_char == '+'){
-            string++; // skip space
             current_char = *(string++);
+            if(current_char == ' '){
+                current_char = *(string++); // skip space
+            }
         }
 
         // check coef
         if(isdigit(current_char)){
-            coef *= (current_char - '0');
+            coef = (current_char - '0');
             current_char = *(string++);
             while(isdigit(current_char)){
                 coef = coef * 10 + (current_char - '0');
                 current_char = *(string++);
             }
+            coef *= sign;
         }
 
         // check expo
@@ -122,20 +128,20 @@ poly_t*	mul(poly_t* p1, poly_t* p2){
 
     // add together terms with same exponent
     int coef, expo, terms_after_add = 0;
-    for (x = 0; x < terms_max; ++x){ 
+    for (x = 0; x < terms_max; ++x){
         coef = product->coefs[x];
         expo = product->expos[x];
-        
-        // populate coefs and expos
         for (y = 0; y < terms_after_add + 1; ++y){
-            if (y == terms_after_add){
-                coefs[y] = coef;
-            } else if (expos[y] == expo){
+            if(y == terms_after_add){
                 coefs[y] = coef;
                 expos[y] = expo;
                 terms_after_add++;
+                break;
+            }else if(expos[y] == expo){
+                coefs[y] += coef;
+                break;
             }
-        }
+        } 
     }
 
     // bubble sort with two arrays
