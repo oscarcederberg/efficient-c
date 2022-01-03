@@ -29,7 +29,54 @@ int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, do
 
 
 int main() {
-    return 0;
+    int m; 
+    int n;
+    double** a;
+    double* b;
+    double* c;
+    double* x;
+    size_t i;
+
+    //
+    // Scan input
+    //
+    scanf("%d", &m);
+    scanf("%d", &n);
+
+    a = (double**)calloc(m, sizeof(double*));
+    b = (double*)calloc(m, sizeof(double));
+    c = (double*)calloc(n, sizeof(double));
+    x = (double*)calloc(n+1, sizeof(double));
+
+    for (i = 0; i < m; ++i)
+    {
+        scanf("%lf", &b[i]);
+    } 
+    for (i = 0; i < m; ++i)
+    {
+        a[i] = (double*)calloc(n, sizeof(double));
+        for (size_t j = 0; j < n; ++j)
+        {
+            scanf("%lf",&a[i][j]);
+        }    
+    } 
+    for (i = 0; i < n; ++i)
+    {
+        scanf("%lf", &c[i]);
+        x[i] = 0;
+    }
+    x[n+1] = 0;
+
+    printf("result: %f", simplex(m, n, a, b, c, x, 0));
+
+    free(b);
+    for (size_t i = 0; i < m; i++)
+    {
+        free(a[i]);
+    } 
+    free(a);
+    free(c);
+    free(x);
 }
 
 double simplex(int m, int n, double** a, double* b, double* c, double* x, double y) {
