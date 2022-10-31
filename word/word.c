@@ -3,59 +3,56 @@
 #include <stdlib.h>
 #include <string.h>
 
-int cc;
-char* cw;
-int cws;
-int a = 1;
-char* lw;
-int lws = 0;
+int current_char;
+char* current_word;
+int current_word_count;
+int allocated_size = 1;
+char* longest_word;
+int longest_word_count = 0;
 
 int main(void)
 {
-	int pf = 0;
+	current_word = malloc(sizeof(char)*allocated_size);
 
-	cw = malloc(sizeof(char)*a);
+	while(1){	
+		current_word_count = 0;
+		current_char = getchar();
 
-	while(!pf){	
-		cws = 0;
-		cc = getchar();
-
-		while(isalpha(cc)){
-			cws++;
+		while(isalpha(current_char)){
+			current_word_count++;
 			
-			if(cws > a){
-				a *= 2;
-				cw = realloc(cw, sizeof(char)*a);
+			if(current_word_count > allocated_size){
+				allocated_size *= 2;
+				current_word = realloc(current_word, sizeof(char)*allocated_size);
 			}
 
-			cw[cws - 1] = cc;
-			cc = getchar();
+			current_word[current_word_count - 1] = current_char;
+			current_char = getchar();
 		}
 
-		if(cws > lws){
-			lws = cws;
-			if(lws == 0){
-				lw = malloc(sizeof(char)*lws);
+		if(current_word_count > longest_word_count){
+			longest_word_count = current_word_count;
+			if(longest_word_count == 0){
+				longest_word = malloc(sizeof(char)*longest_word_count);
 			}else{
-				lw = realloc(lw, sizeof(char)*lws);
+				longest_word = realloc(longest_word, sizeof(char)*longest_word_count);
 			}
 
-			memcpy(lw, cw, lws);
+			memcpy(longest_word, current_word, longest_word_count);
 		}
 
-		if(cc == EOF){
-			pf = 1;
+		if(current_char == EOF){
 			break;
 		}
 	}
 
-	printf("%d characters in longest word: ", lws);
-	for (size_t i = 0; i < lws; ++i)
+	printf("%d characters in longest word: ", longest_word_count);
+	for (size_t i = 0; i < longest_word_count; ++i)
 	{
-		printf("%c", lw[i]);
+		printf("%c", longest_word[i]);
 	}
 	printf("\n");
 
-	free(cw);
-	free(lw);
+	free(current_word);
+	free(longest_word);
 }
