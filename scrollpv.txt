@@ -1,3 +1,0 @@
-to find scrollpv, unpack the sim_ppc.tar file and then it is:
-
-sim_ppc/bin/scrollpv
