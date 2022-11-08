@@ -21,12 +21,37 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
 
 void pivot(struct simplex_t* s, int row, int col);
 
-int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars);
+int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars);
 
 int select_nonbasic(struct simplex_t* s);
 
-int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars);
+int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars);
 
+void print(int m, int n, double** a, double* b, double* c) {
+    printf("%14s = %10d\n%14s = %10d\n", "m", m, "n", n);
+    printf("%14s = ", "max z");
+    for (size_t i = 0; i < m; ++i)
+    {
+        printf("%10.3lf*x_%d", b[i], i);
+        if(i != m - 1){
+            printf(" + ");
+        }
+    }
+    printf("\n");
+    for (size_t i = 0; i < m; ++i)
+    {
+        for (size_t j = 0; j < n; ++j)
+        {
+            printf("%10.3lf*x_%d", a[i][j], i);
+            if(j != n - 1){
+                printf(" + ");
+            } else {
+                printf(" \u2264 %10.3lf", c[i]);
+            }
+        }    
+        printf("\n");
+    }
+}
 
 int main() {
     int m; 
@@ -46,7 +71,7 @@ int main() {
     a = (double**)calloc(m, sizeof(double*));
     b = (double*)calloc(m, sizeof(double));
     c = (double*)calloc(n, sizeof(double));
-    x = (double*)calloc(n+1, sizeof(double));
+    x = (double*)calloc(n + 1, sizeof(double));
 
     for (i = 0; i < m; ++i)
     {
@@ -63,14 +88,13 @@ int main() {
     for (i = 0; i < n; ++i)
     {
         scanf("%lf", &c[i]);
-        x[i] = 0;
     }
-    x[n+1] = 0;
-
-    printf("result: %f", simplex(m, n, a, b, c, x, 0));
+    
+    print(m, n, a, b, c);
+    printf("result: %f\n", simplex(m, n, a, b, c, x, 0));
 
     free(b);
-    for (size_t i = 0; i < m; i++)
+    for (i = 0; i < m; i++)
     {
         free(a[i]);
     } 
@@ -84,19 +108,18 @@ double simplex(int m, int n, double** a, double* b, double* c, double* x, double
 }
 
 double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* vars, int h) {
-    struct simplex_t    s;
+    struct simplex_t*   s;
     int                 i, row, col;
     
     if (!initial(&s, m, n, a, b, c, x, y, vars)) {
-        free(s.vars);
+        free(s->vars);
         return NAN; //not a number.
     }
     
-    col = select_nonbasic(&s);
+    col = select_nonbasic(s);
     while (col  >= 0) {
         row = -1;
-        for (size_t i = 0; i < m; ++i)
-        {
+        for (i = 0; i < m; ++i) {
             if (a[i][col] > epsilon && 
             (row < 0 || b[i] / a[i][col] < b[row] / a[row][col])) {
                 row = i;
@@ -104,36 +127,39 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         if (row < 0) {
-            free(s.vars);
+            free(s->vars);
             return INFINITY; //unbounded.
         }
 
-        pivot(&s, row, col);
-        col = select_nonbasic(&s);
+        pivot(s, row, col);
+        col = select_nonbasic(s);
     }
 
     if (h == 0) {
-        for (size_t i = 0; i < n; ++i) {
-            if (s.vars[i] < n) {
-                x[s.vars[i]] = 0;
+        for (i = 0; i < n; ++i) {
+            if (s->vars[i] < n) {
+                x[s->vars[i]] = 0;
             }
         }        
-        for (size_t i = 0; i < m; ++i) {
-            if (s.vars[n + i] < n) {
-                x[s.vars[n + i]] = s.b[i];
+        for (i = 0; i < m; ++i) {
+            if (s->vars[n + i] < n) {
+                x[s->vars[n + i]] = s->b[i];
             }
         } 
-        free(s.vars);    
+        free(s->vars);    
     } else {
-        for (size_t i = 0; i < n; ++i) {
+        for (i = 0; i < n; ++i) {
             x[i] = 0;
         }        
-        for (size_t i = 0; i < n+m; ++i) {
-            x[i] = s.b[i-n];
+        for (i = 0; i < n+m; ++i) {
+            x[i] = s->b[i-n];
         }
     }
 
-    return s.y;
+    double result = s->y;
+    free(s);
+
+    return result;
 }
 
 void pivot(struct simplex_t* s, int row, int col) {
@@ -188,17 +214,15 @@ void pivot(struct simplex_t* s, int row, int col) {
     a[row][col] = 1 / a[row][col];
 }
 
-int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars) {
+int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars) {
     int             i, j, k;
     double          w;
 
     k = init(s, m, n, a, b, c, x, y, vars);
     
-    if (b[k] >= 0) {
-        return 1; //feasible.
-    }
-
     //assume b[k] >= 0.
+    return 1; //feasible.
+
     /*
     prepare(s,k);
     n = s->n;
@@ -296,24 +320,24 @@ int select_nonbasic(struct simplex_t* s) {
     return -1;
 }
 
-int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars) {
+int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars) {
     int i, k;
 
-    s = malloc(sizeof(struct simplex_t));
+    *s = (struct simplex_t*)malloc(sizeof(struct simplex_t));
+    
+    (*s)->m = m;
+    (*s)->n = n;
+    (*s)->a = a;
+    (*s)->b = b;
+    (*s)->c = c;
+    (*s)->x = x;
+    (*s)->y = y;
+    (*s)->vars = vars;
 
-    s->m = m;
-    s->n = n;
-    s->a = a;
-    s->b = b;
-    s->c = c;
-    s->x = x;
-    s->y = y;
-    s->vars = vars;
-
-    if (s->vars == NULL) {
-        s->vars = malloc(sizeof(int) * (m+n+1));
+    if ((*s)->vars == NULL) {
+        (*s)->vars = malloc(sizeof(int) * (m+n+1));
         for (i = 0; i < m+n; ++i) {
-            s->vars[i] = i;
+            (*s)->vars[i] = i;
         }
     }
 
