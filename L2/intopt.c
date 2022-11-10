@@ -73,20 +73,16 @@ int main() {
     c = (double*)calloc(n, sizeof(double));
     x = (double*)calloc(n + 1, sizeof(double));
 
-    for (i = 0; i < m; ++i)
-    {
+    for (i = 0; i < m; ++i) {
         scanf("%lf", &b[i]);
     } 
-    for (i = 0; i < m; ++i)
-    {
+    for (i = 0; i < m; ++i) {
         a[i] = (double*)calloc(n, sizeof(double));
-        for (size_t j = 0; j < n; ++j)
-        {
+        for (size_t j = 0; j < n; ++j) {
             scanf("%lf",&a[i][j]);
         }    
     } 
-    for (i = 0; i < n; ++i)
-    {
+    for (i = 0; i < n; ++i) {
         scanf("%lf", &c[i]);
     }
     
@@ -94,8 +90,7 @@ int main() {
     printf("result: %f\n", simplex(m, n, a, b, c, x, 0));
 
     free(b);
-    for (i = 0; i < m; i++)
-    {
+    for (i = 0; i < m; i++) {
         free(a[i]);
     } 
     free(a);
