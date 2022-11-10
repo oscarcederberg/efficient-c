@@ -2,7 +2,7 @@
 #include <stdlib.h>
 
 int main(){
-    int constraints_amount; 
+    int constraints_amount;
     int decision_vars_amount;
     double** matrix;
     double* vector_1;
@@ -20,15 +20,15 @@ int main(){
     for (size_t i = 0; i < constraints_amount; ++i)
     {
         scanf("%lf", &vector_1[i]);
-    } 
+    }
     for (size_t i = 0; i < constraints_amount; ++i)
     {
         matrix[i] = (double*)calloc(decision_vars_amount, sizeof(double));
         for (size_t j = 0; j < decision_vars_amount; ++j)
         {
             scanf("%lf",&matrix[i][j]);
-        }    
-    } 
+        }
+    }
     for (size_t i = 0; i < decision_vars_amount; ++i)
     {
         scanf("%lf", &vector_2[i]);
@@ -57,7 +57,7 @@ int main(){
             } else {
                 printf(" \u2264 %10.3lf", vector_2[i]);
             }
-        }    
+        }
         printf("\n");
     }
 
