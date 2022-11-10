@@ -27,26 +27,26 @@ int select_nonbasic(struct simplex_t* s);
 
 int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var);
 
-void print(int m, int n, double** a, double* b, double* c) {
-    printf("%14s = %10d\n%14s = %10d\n", "m", m, "n", n);
+void print(struct simplex_t* s) {
+    printf("%14s = %10d\n%14s = %10d\n", "m", s->m, "n", s->n);
     printf("%14s = ", "max z");
-    for (size_t i = 0; i < m; ++i)
+    for (size_t i = 0; i < s->m; ++i)
     {
-        printf("%10.3lf*x_%d", b[i], i);
-        if(i != m - 1){
+        printf("%10.3lf*x_%d", s->b[i], i);
+        if(i != s->m - 1){
             printf(" + ");
         }
     }
     printf("\n");
-    for (size_t i = 0; i < m; ++i)
+    for (size_t i = 0; i < s->m; ++i)
     {
-        for (size_t j = 0; j < n; ++j)
+        for (size_t j = 0; j < s->n; ++j)
         {
-            printf("%10.3lf*x_%d", a[i][j], i);
-            if(j != n - 1){
+            printf("%10.3lf*x_%d", s->a[i][j], j);
+            if(j != s->n - 1){
                 printf(" + ");
             } else {
-                printf(" \u2264 %10.3lf", c[i]);
+                printf(" \u2264 %10.3lf", s->c[i]);
             }
         }
         printf("\n");
@@ -73,8 +73,8 @@ int main() {
     c = (double*)calloc(n, sizeof(double));
     x = (double*)calloc(n + 1, sizeof(double));
 
-    for (i = 0; i < m; ++i) {
-        scanf("%lf", &b[i]);
+    for (i = 0; i < n; ++i) {
+        scanf("%lf", &c[i]);
     }
     for (i = 0; i < m; ++i) {
         a[i] = (double*)calloc(n, sizeof(double));
@@ -82,11 +82,10 @@ int main() {
             scanf("%lf",&a[i][j]);
         }
     }
-    for (i = 0; i < n; ++i) {
-        scanf("%lf", &c[i]);
+    for (i = 0; i < m; ++i) {
+        scanf("%lf", &b[i]);
     }
 
-    print(m, n, a, b, c);
     printf("result: %f\n", simplex(m, n, a, b, c, x, 0));
 
     free(b);
@@ -111,7 +110,9 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         return NAN; //not a number.
     }
 
-    while ((col = select_nonbasic(s))  >= 0) {
+    print(s);
+
+    while ((col = select_nonbasic(s)) >= 0) {
         row = -1;
         for (i = 0; i < m; ++i) {
             if (a[i][col] > epsilon &&
@@ -126,6 +127,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         pivot(s, row, col);
+        print(s);
     }
 
     if (h == 0) {
@@ -144,8 +146,8 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         for (i = 0; i < n; ++i) {
             x[i] = 0;
         }
-        for (i = 0; i < n + m; ++i) {
-            x[i] = s->b[i-n];
+        for (i = n; i < n + m; ++i) {
+            x[i] = s->b[i - n];
         }
     }
 
@@ -205,6 +207,9 @@ void pivot(struct simplex_t* s, int row, int col) {
 
     b[row] = b[row] / a[row][col];
     a[row][col] = 1 / a[row][col];
+    printf("pivot:\n");
+    printf("row: %d\n", row);
+    printf("col: %d\n", col);
 }
 
 int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) {

@@ -16,7 +16,7 @@ void print(int constraints_amount, int decision_vars_amount, double** matrix, do
     {
         for (size_t j = 0; j < decision_vars_amount; ++j)
         {
-            printf("%10.3lf*x_%d", matrix[i][j], i);
+            printf("%10.3lf*x_%d", matrix[i][j], j);
             if(j != decision_vars_amount - 1){
                 printf(" + ");
             } else {
