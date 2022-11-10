@@ -7,7 +7,7 @@ double epsilon = 10e-6;
 struct simplex_t{
     int         m;
     int         n;
-    int*        vars;
+    int*        var;
     double**    a;
     double*     b;
     double*     x;
@@ -17,15 +17,15 @@ struct simplex_t{
 
 double simplex(int m, int n, double** a, double* b, double* c, double* x, double y);
 
-double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* vars, int h);
+double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h);
 
 void pivot(struct simplex_t* s, int row, int col);
 
-int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars);
+int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var);
 
 int select_nonbasic(struct simplex_t* s);
 
-int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars);
+int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var);
 
 void print(int m, int n, double** a, double* b, double* c) {
     printf("%14s = %10d\n%14s = %10d\n", "m", m, "n", n);
@@ -102,12 +102,12 @@ double simplex(int m, int n, double** a, double* b, double* c, double* x, double
     return xsimplex(m, n, a, b, c, x, y, NULL, 0);
 }
 
-double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* vars, int h) {
+double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h) {
     struct simplex_t*   s;
     int                 i, row, col;
 
-    if (!initial(&s, m, n, a, b, c, x, y, vars)) {
-        free(s->vars);
+    if (!initial(&s, m, n, a, b, c, x, y, var)) {
+        free(s->var);
         return NAN; //not a number.
     }
 
@@ -121,7 +121,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         if (row < 0) {
-            free(s->vars);
+            free(s->var);
             return INFINITY; //unbounded.
         }
 
@@ -130,16 +130,16 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
 
     if (h == 0) {
         for (i = 0; i < n; ++i) {
-            if (s->vars[i] < n) {
-                x[s->vars[i]] = 0;
+            if (s->var[i] < n) {
+                x[s->var[i]] = 0;
             }
         }
         for (i = 0; i < m; ++i) {
-            if (s->vars[n + i] < n) {
-                x[s->vars[n + i]] = s->b[i];
+            if (s->var[n + i] < n) {
+                x[s->var[n + i]] = s->b[i];
             }
         }
-        free(s->vars);
+        free(s->var);
     } else {
         for (i = 0; i < n; ++i) {
             x[i] = 0;
@@ -163,9 +163,9 @@ void pivot(struct simplex_t* s, int row, int col) {
     int             n = s->n;
     int             i, j, t;
 
-    t = s->vars[col];
-    s->vars[col] = s->vars[n + row];
-    s->vars[n + row] = t;
+    t = s->var[col];
+    s->var[col] = s->var[n + row];
+    s->var[n + row] = t;
     s->y = s->y + c[col] * b[row] / a[row][col];
 
     for (i = 0; i < n; ++i) {
@@ -207,11 +207,11 @@ void pivot(struct simplex_t* s, int row, int col) {
     a[row][col] = 1 / a[row][col];
 }
 
-int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars) {
+int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) {
     int             i, j, k;
     double          w;
 
-    k = init(s, m, n, a, b, c, x, y, vars);
+    k = init(s, m, n, a, b, c, x, y, var);
 
     //assume b[k] >= 0.
     return 1; //feasible.
@@ -219,10 +219,10 @@ int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c
     /*
     prepare(s,k);
     n = s->n;
-    s->y = xsimplex(m,n, s->a, s->b, s->c, s->x, 0, s->vars, 1);
+    s->y = xsimplex(m,n, s->a, s->b, s->c, s->x, 0, s->var, 1);
 
     for (i = 0; i < m+n; ++i) {
-        if (s->vars[i] == m+n+1) {
+        if (s->var[i] == m+n+1) {
             if (fabs(s->x[i]) > epsilon) {
                 free(s->x);
                 free(s->c);
@@ -246,9 +246,9 @@ int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c
 
     if (i < n-1) {
         //x_{n+m} is nonbasic and not last. swap columns i and n-1.
-        k = s->vars[i];
-        s->vars[i] = s->vars[n-1];
-        s->vars[i-1] = k;
+        k = s->var[i];
+        s->var[i] = s->var[n-1];
+        s->var[i-1] = k;
         for (k = 0; k < m; ++k) {
             w = s->a[k][n-1];
             s->a[k][n-1] = s->a[k][i];
@@ -263,7 +263,7 @@ int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c
     s->y = y;
 
     for (k = n-1; k < n+m-1; ++k) {
-        s->vars[k] = s->vars[k+1];
+        s->var[k] = s->var[k+1];
     }
 
     n = s->n = s->n - 1;
@@ -271,14 +271,14 @@ int initial(struct simplex_t** s, int m, int n, double** a, double* b, double* c
 
     for (k = 0; k < n; ++k) {
         for (j = 0; j < n; ++j) {
-           if (k == s->vars[j]) {
+           if (k == s->var[j]) {
                //x_k is nonbasic. add c_k.
                t[j] = t[j] + s->c[k];
                goto next_k;
            }
         }
         for (j = 0; j < m; ++j) {
-           if (s->vars[n+j] == k) {
+           if (s->var[n+j] == k) {
                //x_k is at row j.
                break;
            }
@@ -313,7 +313,7 @@ int select_nonbasic(struct simplex_t* s) {
     return -1;
 }
 
-int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* vars) {
+int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) {
     int i, k;
 
     *s = (struct simplex_t*)malloc(sizeof(struct simplex_t));
@@ -325,12 +325,12 @@ int init(struct simplex_t** s, int m, int n, double** a, double* b, double* c, d
     (*s)->c = c;
     (*s)->x = x;
     (*s)->y = y;
-    (*s)->vars = vars;
+    (*s)->var = var;
 
-    if ((*s)->vars == NULL) {
-        (*s)->vars = (int*)calloc(m + n + 1, sizeof(int));
+    if ((*s)->var == NULL) {
+        (*s)->var = (int*)calloc(m + n + 1, sizeof(int));
         for (i = 0; i < m+n; ++i) {
-            (*s)->vars[i] = i;
+            (*s)->var[i] = i;
         }
     }
 
