@@ -1,26 +1,26 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void print(int constraints_amount, int decision_vars_amount, double** matrix, double* vector_1, double* vector_2) {
-    printf("%14s = %10d\n%14s = %10d\n", "m", constraints_amount, "n", decision_vars_amount);
+void print(int m, int n, double** a, double* b, double* c) {
+    printf("%14s = %10d\n%14s = %10d\n", "m", m, "n", n);
     printf("%14s = ", "max z");
-    for (size_t i = 0; i < constraints_amount; ++i)
+    for (size_t i = 0; i < m; ++i)
     {
-        printf("%10.3lf*x_%d", vector_1[i], i);
-        if(i != constraints_amount - 1){
+        printf("%10.3lf*x_%d", c[i], i);
+        if(i != m - 1){
             printf(" + ");
         }
     }
     printf("\n");
-    for (size_t i = 0; i < constraints_amount; ++i)
+    for (size_t i = 0; i < m; ++i)
     {
-        for (size_t j = 0; j < decision_vars_amount; ++j)
+        for (size_t j = 0; j < n; ++j)
         {
-            printf("%10.3lf*x_%d", matrix[i][j], j);
-            if(j != decision_vars_amount - 1){
+            printf("%10.3lf*x_%d", a[i][j], j);
+            if(j != n - 1){
                 printf(" + ");
             } else {
-                printf(" \u2264 %10.3lf", vector_2[i]);
+                printf(" \u2264 %10.3lf", b[i]);
             }
         }
         printf("\n");
@@ -28,47 +28,47 @@ void print(int constraints_amount, int decision_vars_amount, double** matrix, do
 }
 
 int main(){
-    int constraints_amount;
-    int decision_vars_amount;
-    double** matrix;
-    double* vector_1;
-    double* vector_2;
+    int m;
+    int n;
+    double** a;
+    double* b;
+    double* c;
 
     //
     // Scan input
     //
-    scanf("%d", &constraints_amount);
-    scanf("%d", &decision_vars_amount);
+    scanf("%d", &m);
+    scanf("%d", &n);
 
-    matrix = (double**)calloc(constraints_amount, sizeof(double*));
-    vector_1 = (double*)calloc(constraints_amount, sizeof(double));
-    vector_2 = (double*)calloc(decision_vars_amount, sizeof(double));
-    for (size_t i = 0; i < constraints_amount; ++i)
+    a = (double**)calloc(m, sizeof(double*));
+    b = (double*)calloc(m, sizeof(double));
+    c = (double*)calloc(n, sizeof(double));
+    for (size_t i = 0; i < n; ++i)
     {
-        scanf("%lf", &vector_1[i]);
+        scanf("%lf", &c[i]);
     }
-    for (size_t i = 0; i < constraints_amount; ++i)
+    for (size_t i = 0; i < m; ++i)
     {
-        matrix[i] = (double*)calloc(decision_vars_amount, sizeof(double));
-        for (size_t j = 0; j < decision_vars_amount; ++j)
+        a[i] = (double*)calloc(n, sizeof(double));
+        for (size_t j = 0; j < n; ++j)
         {
-            scanf("%lf",&matrix[i][j]);
+            scanf("%lf",&a[i][j]);
         }
     }
-    for (size_t i = 0; i < decision_vars_amount; ++i)
+    for (size_t i = 0; i < m; ++i)
     {
-        scanf("%lf", &vector_2[i]);
+        scanf("%lf", &b[i]);
     }
 
-    print(constraints_amount, decision_vars_amount, matrix, vector_1, vector_2);
+    print(m, n, a, b, c);
 
-    free(vector_1);
-    for (size_t i = 0; i < constraints_amount; i++)
+    free(b);
+    for (size_t i = 0; i < m; i++)
     {
-        free(matrix[i]);
+        free(a[i]);
     }
-    free(matrix);
-    free(vector_2);
+    free(a);
+    free(c);
 
     return 0;
 }
