@@ -221,7 +221,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var, 1);
 
     for (i = 0; i < m + n; ++i) {
-        if (s->var[i] == m + n + 1) {
+        if (s->var[i] == m + n - 1) {
             if (fabs(s->x[i]) > epsilon) {
                 free(s->x);
                 free(s->c);
@@ -244,7 +244,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
         i = j;
     }
 
-    if (i < n-1) {
+    if (i < n - 1) {
         //x_{n+m} is nonbasic and not last. swap columns i and n-1.
         k = s->var[i];
         s->var[i] = s->var[n - 1];
