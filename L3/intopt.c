@@ -50,33 +50,6 @@ void print(struct simplex_t* s) {
     printf("--------------------------\n");
 }
 
-void print_main(int m, int n, double** a, double* b, double* c) {
-    printf("%14s = %10d\n%14s = %10d\n", "m", m, "n", n);
-    printf("%14s = ", "max z");
-    for (size_t i = 0; i < n; ++i)
-    {
-        printf("%10.3lf*x_%d", c[i], i);
-        if(i != n - 1){
-            printf(" + ");
-        }
-    }
-    printf("\n");
-    for (size_t i = 0; i < m; ++i)
-    {
-        for (size_t j = 0; j < n; ++j)
-        {
-            printf("%10.3lf*x_%d", a[i][j], j);
-            if(j != n - 1){
-                printf(" + ");
-            } else {
-                printf(" \u2264 %10.3lf", b[i]);
-            }
-        }
-        printf("\n");
-    }
-    printf("--------------------------\n");
-}
-
 int main() {
     int m;
     int n;
@@ -110,7 +83,6 @@ int main() {
         scanf("%lf", &b[i]);
     }
 
-    print_main(m, n, a, b, c);
     printf("result: %f\n", simplex(m, n, a, b, c, x, 0));
 
     free(b);
@@ -152,7 +124,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         pivot(s, row, col);
-        print(s);
+        //print(s);
     }
 
     if (h == 0) {
@@ -246,7 +218,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
 
     prepare(s, k);
     n = s->n;
-    s->y = xsimplex(m,n, s->a, s->b, s->c, s->x, 0, s->var, 1);
+    s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var, 1);
 
     for (i = 0; i < m + n; ++i) {
         if (s->var[i] == m + n + 1) {
@@ -263,6 +235,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     if (i >= n) {
         // x_{n+m} is basic. find good nonbasic.
         for (j = k = 0; k < n; ++k) {
+            printf("|%lf| > |%lf|\n", s->a[i - n][k], s->a[i - n][j]);
             if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
                 j = k;
             }
@@ -345,7 +318,7 @@ void prepare(struct simplex_t* s, int k) {
 
     n = n + 1;
     for (i = 0; i < m; ++i) {
-        s->a[i][n - 1] = 1;
+        s->a[i][n - 1] = -1;
     }
 
     s->x = (double*)calloc(m + n, sizeof(double));
