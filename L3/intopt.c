@@ -57,6 +57,7 @@ int main() {
     double* b;
     double* c;
     double* x;
+    double y;
     size_t i;
 
     //
@@ -65,16 +66,16 @@ int main() {
     scanf("%d", &m);
     scanf("%d", &n);
 
-    a = (double**)calloc(m, sizeof(double*));
-    b = (double*)calloc(m, sizeof(double));
-    c = (double*)calloc(n, sizeof(double));
-    x = (double*)calloc(n + 1, sizeof(double));
+    a = (double**)calloc(m + n, sizeof(double*));
+    b = (double*)calloc(m + n, sizeof(double));
+    c = (double*)calloc(n + 1, sizeof(double));
+    x = (double*)calloc(n + m + 1, sizeof(double));
 
     for (i = 0; i < n; ++i) {
         scanf("%lf", &c[i]);
     }
     for (i = 0; i < m; ++i) {
-        a[i] = (double*)calloc(n, sizeof(double));
+        a[i] = (double*)calloc(n + 1, sizeof(double));
         for (size_t j = 0; j < n; ++j) {
             scanf("%lf",&a[i][j]);
         }
@@ -82,8 +83,8 @@ int main() {
     for (i = 0; i < m; ++i) {
         scanf("%lf", &b[i]);
     }
-
-    printf("result: %f\n", simplex(m, n, a, b, c, x, 0));
+    y = 0;
+    printf("result: %lf\n", simplex(m, n, a, b, c, x, y));
 
     free(b);
     for (i = 0; i < m; i++) {
@@ -99,17 +100,15 @@ double simplex(int m, int n, double** a, double* b, double* c, double* x, double
 }
 
 double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h) {
-    struct simplex_t*   s;
+    struct simplex_t   s;
     int                 i, row, col;
 
-    s = (struct simplex_t*)calloc(1, sizeof(struct simplex_t));
-
-    if (!initial(s, m, n, a, b, c, x, y, var)) {
-        free(s->var);
+    if (!initial(&s, m, n, a, b, c, x, y, var)) {
+        free(s.var);
         return NAN; //not a number.
     }
 
-    while ((col = select_nonbasic(s)) >= 0) {
+    while ((col = select_nonbasic(&s)) >= 0) {
         row = -1;
         for (i = 0; i < m; ++i) {
             if (a[i][col] > epsilon &&
@@ -119,39 +118,36 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         if (row < 0) {
-            free(s->var);
+            free(s.var);
             return INFINITY; //unbounded.
         }
 
-        pivot(s, row, col);
+        pivot(&s, row, col);
         //print(s);
     }
 
     if (h == 0) {
         for (i = 0; i < n; ++i) {
-            if (s->var[i] < n) {
-                x[s->var[i]] = 0;
+            if (s.var[i] < n) {
+                x[s.var[i]] = 0;
             }
         }
         for (i = 0; i < m; ++i) {
-            if (s->var[n + i] < n) {
-                x[s->var[n + i]] = s->b[i];
+            if (s.var[n + i] < n) {
+                x[s.var[n + i]] = s.b[i];
             }
         }
-        free(s->var);
+        free(s.var);
     } else {
         for (i = 0; i < n; ++i) {
             x[i] = 0;
         }
         for (i = n; i < n + m; ++i) {
-            x[i] = s->b[i - n];
+            x[i] = s.b[i - n];
         }
     }
 
-    double result = s->y;
-    free(s);
-
-    return result;
+    return s.y;
 }
 
 void pivot(struct simplex_t* s, int row, int col) {
@@ -262,7 +258,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     s->c = c;
     s->y = y;
 
-    for (k = n - 1; k < n + m - 1; ++k) {
+    for (k = n - 1; k < n + m - 1; k++) {
         s->var[k] = s->var[k + 1];
     }
 
@@ -270,9 +266,9 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     double t[n];
 
     int next_k;
-    for (k = 0; k < n; ++k) {
+    for (k = 0; k < n; k++) {
         next_k = 0;
-        for (j = 0; j < n; ++j) {
+        for (j = 0; j < n; j++) {
            if (k == s->var[j]) {
                //x_k is nonbasic. add c_k.
                t[j] = t[j] + s->c[k];
@@ -284,7 +280,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
         if (next_k)
             continue;
 
-        for (j = 0; j < m; ++j) {
+        for (j = 0; j < m; j++) {
            if (s->var[n + j] == k) {
                //x_k is at row j.
                break;
@@ -293,12 +289,12 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
 
         s->y = s->y + s->c[k] * s->b[j];
 
-        for (i = 0; i < n; ++i) {
+        for (i = 0; i < n; i++) {
             t[i] = t[i] - s->c[k] * s->a[j][i];
         }
     }
 
-    for (i = 0; i < n; ++i) {
+    for (i = 0; i < n; i++) {
         s->c[i] = t[i];
     }
 
@@ -314,7 +310,7 @@ void prepare(struct simplex_t* s, int k) {
 
     // make room for x_{m + n} at s.var[n] by moving s.var[n..n+m-1] one
     // step to the right.
-    for (i = m + n; i > n; --i) {
+    for (i = m + n; i > n; i--) {
         s->var[i] = s->var[i - 1];
     }
 
@@ -322,11 +318,7 @@ void prepare(struct simplex_t* s, int k) {
     // add x_{m + n} to each constraint
 
     n = n + 1;
-    for (i = 0; i < m; ++i){
-        s->a[i] = realloc(s->a[i], n * sizeof(double));
-    }
-
-    for (i = 0; i < m; ++i) {
+    for (i = 0; i < m; i++) {
         s->a[i][n - 1] = -1;
     }
 
@@ -339,7 +331,7 @@ void prepare(struct simplex_t* s, int k) {
 
 int select_nonbasic(struct simplex_t* s) {
     int i;
-    for (i = 0; i < s->n; ++i) {
+    for (i = 0; i < s->n; i++) {
         if (s->c[i] > epsilon) {
             return i;
         }
