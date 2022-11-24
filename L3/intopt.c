@@ -322,6 +322,10 @@ void prepare(struct simplex_t* s, int k) {
     // add x_{m + n} to each constraint
 
     n = n + 1;
+    for (i = 0; i < m; ++i){
+        s->a[i] = realloc(s->a[i], n * sizeof(double));
+    }
+
     for (i = 0; i < m; ++i) {
         s->a[i][n - 1] = -1;
     }
