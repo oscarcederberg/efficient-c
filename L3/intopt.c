@@ -28,7 +28,7 @@ void print(struct simplex_t* s) {
     printf("%14s = ", "max z");
     for (size_t i = 0; i < s->n; ++i)
     {
-        printf("%10.3lf*x_%d", s->c[i], i);
+        printf("%10.3lf*x_%ld", s->c[i], i);
         if(i != s->n - 1){
             printf(" + ");
         }
@@ -38,7 +38,7 @@ void print(struct simplex_t* s) {
     {
         for (size_t j = 0; j < s->n; ++j)
         {
-            printf("%10.3lf*x_%d", s->a[i][j], j);
+            printf("%10.3lf*x_%ld", s->a[i][j], j);
             if(j != s->n - 1){
                 printf(" + ");
             } else {
