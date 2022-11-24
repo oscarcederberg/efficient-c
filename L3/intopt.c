@@ -269,15 +269,21 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     n = s->n = s->n - 1;
     double t[n];
 
+    int next_k;
     for (k = 0; k < n; ++k) {
+        next_k = 0;
         for (j = 0; j < n; ++j) {
            if (k == s->var[j]) {
                //x_k is nonbasic. add c_k.
                t[j] = t[j] + s->c[k];
-               goto next_k;
+               next_k = 1;
+               break;
            }
         }
-        // x_k is basic
+
+        if (next_k)
+            continue;
+
         for (j = 0; j < m; ++j) {
            if (s->var[n + j] == k) {
                //x_k is at row j.
@@ -290,7 +296,6 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
         for (i = 0; i < n; ++i) {
             t[i] = t[i] - s->c[k] * s->a[j][i];
         }
-    next_k:
     }
 
     for (i = 0; i < n; ++i) {
