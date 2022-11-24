@@ -26,7 +26,7 @@ int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, do
 void print(struct simplex_t* s) {
     printf("%14s = %10d\n%14s = %10d\n", "m", s->m, "n", s->n);
     printf("%14s = ", "max z");
-    for (size_t i = 0; i < s->n; ++i)
+    for (size_t i = 0; i < s->n; i++)
     {
         printf("%10.3lf*x_%ld", s->c[i], i);
         if(i != s->n - 1){
@@ -34,9 +34,9 @@ void print(struct simplex_t* s) {
         }
     }
     printf("\n");
-    for (size_t i = 0; i < s->m; ++i)
+    for (size_t i = 0; i < s->m; i++)
     {
-        for (size_t j = 0; j < s->n; ++j)
+        for (size_t j = 0; j < s->n; j++)
         {
             printf("%10.3lf*x_%ld", s->a[i][j], j);
             if(j != s->n - 1){
@@ -71,16 +71,16 @@ int main() {
     c = (double*)calloc(n + 1, sizeof(double));
     x = (double*)calloc(n + m + 1, sizeof(double));
 
-    for (i = 0; i < n; ++i) {
+    for (i = 0; i < n; i++) {
         scanf("%lf", &c[i]);
     }
-    for (i = 0; i < m; ++i) {
+    for (i = 0; i < m; i++) {
         a[i] = (double*)calloc(n + 1, sizeof(double));
-        for (size_t j = 0; j < n; ++j) {
+        for (size_t j = 0; j < n; j++) {
             scanf("%lf",&a[i][j]);
         }
     }
-    for (i = 0; i < m; ++i) {
+    for (i = 0; i < m; i++) {
         scanf("%lf", &b[i]);
     }
     y = 0;
@@ -110,7 +110,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
 
     while ((col = select_nonbasic(&s)) >= 0) {
         row = -1;
-        for (i = 0; i < m; ++i) {
+        for (i = 0; i < m; i++) {
             if (a[i][col] > epsilon &&
             (row < 0 || b[i] / a[i][col] < b[row] / a[row][col])) {
                 row = i;
@@ -127,22 +127,22 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
     }
 
     if (h == 0) {
-        for (i = 0; i < n; ++i) {
+        for (i = 0; i < n; i++) {
             if (s.var[i] < n) {
                 x[s.var[i]] = 0;
             }
         }
-        for (i = 0; i < m; ++i) {
+        for (i = 0; i < m; i++) {
             if (s.var[n + i] < n) {
                 x[s.var[n + i]] = s.b[i];
             }
         }
         free(s.var);
     } else {
-        for (i = 0; i < n; ++i) {
+        for (i = 0; i < n; i++) {
             x[i] = 0;
         }
-        for (i = n; i < n + m; ++i) {
+        for (i = n; i < n + m; i++) {
             x[i] = s.b[i - n];
         }
     }
@@ -163,22 +163,22 @@ void pivot(struct simplex_t* s, int row, int col) {
     s->var[n + row] = t;
     s->y = s->y + c[col] * b[row] / a[row][col];
 
-    for (i = 0; i < n; ++i) {
+    for (i = 0; i < n; i++) {
         if (i != col) {
             c[i] = c[i] - c[col] * a[row][i] / a[row][col];
         }
     }
     c[col] = -c[col] / a[row][col];
 
-    for (i = 0; i < m; ++i) {
+    for (i = 0; i < m; i++) {
         if (i != row) {
             b[i] = b[i] - a[i][col] * b[row] / a[row][col];
         }
     }
 
-    for (i = 0; i < m; ++i) {
+    for (i = 0; i < m; i++) {
         if (i != row) {
-            for (j = 0; j < n; ++j) {
+            for (j = 0; j < n; j++) {
                 if (j != col) {
                     a[i][j] = a[i][j] - a[i][col] * a[row][j] / a[row][col];
                 }
@@ -186,13 +186,13 @@ void pivot(struct simplex_t* s, int row, int col) {
         }
     }
 
-    for (i = 0; i < m; ++i) {
+    for (i = 0; i < m; i++) {
         if (i != row) {
             a[i][col] = -a[i][col] / a[row][col];
         }
     }
 
-    for (i = 0; i < n; ++i) {
+    for (i = 0; i < n; i++) {
         if (i != col) {
             a[row][i] = a[row][i] / a[row][col];
         }
@@ -216,7 +216,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     n = s->n;
     s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var, 1);
 
-    for (i = 0; i < m + n; ++i) {
+    for (i = 0; i < m + n; i++) {
         if (s->var[i] == m + n - 1) {
             if (fabs(s->x[i]) > epsilon) {
                 free(s->x);
@@ -230,7 +230,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
 
     if (i >= n) {
         // x_{n+m} is basic. find good nonbasic.
-        for (j = k = 0; k < n; ++k) {
+        for (j = k = 0; k < n; k++) {
             printf("|%lf| > |%lf|\n", s->a[i - n][k], s->a[i - n][j]);
             if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
                 j = k;
@@ -245,7 +245,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
         k = s->var[i];
         s->var[i] = s->var[n - 1];
         s->var[n - 1] = k;
-        for (k = 0; k < m; ++k) {
+        for (k = 0; k < m; k++) {
             w = s->a[k][n - 1];
             s->a[k][n - 1] = s->a[k][i];
             s->a[k][i] = w;
@@ -353,12 +353,12 @@ int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, do
 
     if (s->var == NULL) {
         s->var = (int*)calloc(m + n + 1, sizeof(int));
-        for (i = 0; i < m + n; ++i) {
+        for (i = 0; i < m + n; i++) {
             s->var[i] = i;
         }
     }
 
-    for (k = 0, i = 1; i < m; ++i) {
+    for (k = 0, i = 1; i < m; i++) {
         if (b[i] < b[k]) {
             k = i;
         }
