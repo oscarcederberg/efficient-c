@@ -124,8 +124,7 @@ int main() {
     for (i = 0; i < m; i++) {
         scanf("%lf", &b[i]);
     }
-    y = 0;
-    printf("result: %lf\n", simplex(m, n, a, b, c, x, y));
+    printf("result: %lf\n", intopt(m, n, a, b, c, x));
 
     free(b);
     for (i = 0; i < m; i++) {
