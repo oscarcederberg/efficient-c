@@ -51,7 +51,7 @@ int is_integer(double* xp);
 int integer(struct node_t* p);
 void bound(struct node_t* p, int h, double* zp, double* x);
 int branch(struct node_t* q, double z);
-void succ(struct node_t* p, int h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x);
+void succ(struct node_t* p, struct list_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x);
 double intopt(int m, int n, double** a, double* b, double* c, double* x);
 
 void free_node(struct node_t* p);
@@ -564,7 +564,7 @@ int branch(struct node_t* q, double z) {
     return 0;
 }
 
-void succ(struct node_t* p, int h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
+void succ(struct node_t* p, struct list_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
     struct node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
 
     if (q == NULL) {
@@ -577,12 +577,12 @@ void succ(struct node_t* p, int h, int m, int n, double** a, double* b, double* 
         if (integer(q)) {
             bound(q, h, zp, x);
         } else if (branch(q, *zp)) {
-            //add q to h
+            add(h, q);
             return;
         }
     }
 
-    free(q); // NOTE: need to free more?
+    free_node(q);
 }
 
 double intopt(int m, int n, double** a, double* b, double* c, double* x) {
@@ -599,7 +599,8 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         if (integer(p)) {
             memcpy(x, p->x, p->n + 1);
         }
-        free(p); // NOTE: need to free more?
+        free_node(p);
+        free_list(h);
         return z;
     }
 
@@ -609,7 +610,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         struct node_t* q = pop(h);
         succ(q, h, m, n, a, b, c, q->h, 1, fabs(q->xh), &z, x);
         succ(q, h, m, n, a, b, c, q->h, -1, -fabs(q->xh), &z, x);
-        free(q); // NOTE: need to free more?
+        free_node(q);
     }
 
     if (z = -INFINITY) {
@@ -617,4 +618,29 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     } else {
         return z;
     }
+}
+
+void free_node(struct node_t* p) {
+    for (int i = 0; i < p->m + 1; i++) {
+        free(p->a[i]);
+    }
+    free(p->a);
+    free(p->b);
+    free(p->c);
+    free(p->x);
+    free(p->min);
+    free(p->max);
+    free(p);
+}
+
+void free_list(struct list_t* h) {
+    struct list_t* next = h->next;
+
+    while (next != NULL) {
+        free(h);
+        h = next;
+        next = next->next;
+    }
+
+    free(h);
 }
