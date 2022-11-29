@@ -424,7 +424,9 @@ struct node_t* initial_node(int m, int n, double** a, double* b, double* c) {
         p->a[i] = (double*)calloc(n + 1, sizeof(double));
     }
 
-    memcpy(p->a, a, (m + 1) * (n + 1));
+    for (i = 0; i < m; i++) {
+        memcpy(p->a[i], a[i], p->n + 1);
+    }
     memcpy(p->b, b, m + 1);
     memcpy(p->c, c, n + 1);
 
