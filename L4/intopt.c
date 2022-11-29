@@ -557,7 +557,7 @@ int branch(struct node_t* q, double z) {
 
             max = q->max[h];
 
-            if (fabs(q->x[h]) < min || fabs(q->x[h]) > max) {
+            if (floor(q->x[h]) < min || ceil(q->x[h]) > max) {
                 continue;
             }
 
