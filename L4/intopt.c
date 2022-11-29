@@ -432,6 +432,8 @@ struct node_t* initial_node(int m, int n, double** a, double* b, double* c) {
         p->min[i] = -INFINITY;
         p->max[i] = +INFINITY;
     }
+
+    return p;
 }
 
 struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk) {
