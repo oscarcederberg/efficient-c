@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 double epsilon = 10e-6;
@@ -60,7 +61,6 @@ void free_node(struct node_t* p);
 struct set_t* create_set();
 void add(struct set_t* h, struct node_t* p);
 int size(struct set_t* h);
-void remove(struct set_t* h, struct node_t* p);
 struct node_t* pop(struct set_t* h);
 void free_set(struct set_t* h);
 
@@ -673,21 +673,6 @@ void add(struct set_t* h, struct node_t* p) {
 
 int size(struct set_t* h) {
     return h->count;
-}
-
-void remove(struct set_t* h, struct node_t* p) {
-    for (int i = 0; i < h->alloc; i++) {
-        if (h->nodes[i] == p) {
-            free(h->nodes[i]);
-            h->nodes[i] = NULL;
-            h->count--;
-            break;
-        }
-    }
-
-    if (h->count == 0) {
-        free_set(h);
-    }
 }
 
 struct node_t* pop(struct set_t* h) {
