@@ -706,5 +706,6 @@ void free_set(struct set_t* h) {
             free_node(h->nodes[i]);
         }
     }
+    free(h->nodes);
     free(h);
 }
