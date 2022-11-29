@@ -587,7 +587,7 @@ void succ(struct node_t* p, struct set_t* h, int m, int n, double** a, double* b
 
     q->z = simplex(q->m, q->n, q->a, q->b, q->c, q->x, 0);
 
-    if (finite(q->z)) {
+    if (isfinite(q->z)) {
         if (integer(q)) {
             bound(q, h, zp, x);
         } else if (branch(q, *zp)) {
@@ -606,7 +606,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0);
 
-    if (integer(p) || !finite(p->z)) {
+    if (integer(p) || !isfinite(p->z)) {
         z = p->z;
         if (integer(p)) {
             memcpy(x, p->x, p->n + 1);
