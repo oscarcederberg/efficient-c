@@ -32,9 +32,10 @@ struct node_t {
     double      z;
 };
 
-struct list_t {
-    struct set_t*   next;
-    struct node_t*  node;
+struct set_t {
+    int             count;
+    int             alloc;
+    struct node_t** nodes;
 };
 
 double simplex(int m, int n, double** a, double* b, double* c, double* x, double y);
@@ -49,18 +50,19 @@ struct node_t* initial_node(int m, int n, double** a, double* b, double* c);
 struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk);
 int is_integer(double* xp);
 int integer(struct node_t* p);
-void bound(struct node_t* p, int h, double* zp, double* x);
+void bound(struct node_t* p, struct set_t* h, double* zp, double* x);
 int branch(struct node_t* q, double z);
-void succ(struct node_t* p, struct list_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x);
+void succ(struct node_t* p, struct set_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x);
 double intopt(int m, int n, double** a, double* b, double* c, double* x);
 
 void free_node(struct node_t* p);
 
-void add(struct list_t* h, struct node_t* p);
-int size(struct list_t* h);
-void remove(struct list_t* h, struct node_t* p);
-struct node_t* pop(struct list_t* h);
-void free_list(struct list_t* h);
+struct set_t* create_set();
+void add(struct set_t* h, struct node_t* p);
+int size(struct set_t* h);
+void remove(struct set_t* h, struct node_t* p);
+struct node_t* pop(struct set_t* h);
+void free_set(struct set_t* h);
 
 void print(struct simplex_t* s) {
     printf("%14s = %10d\n%14s = %10d\n", "m", s->m, "n", s->n);
@@ -517,11 +519,20 @@ int integer(struct node_t* p) {
     return 1;
 }
 
-void bound(struct node_t* p, int h, double* zp, double* x) {
+void bound(struct node_t* p, struct set_t* h, double* zp, double* x) {
     if (p->z > *zp) {
         *zp = p->z;
         memcpy(x, p->x, p->n + 1);
-        // remove and delete all nodes q in h with q.z < p.z
+
+        for (int i = 0; i < h->alloc; i++) {
+            if (!h->nodes[i] || h->nodes[i]->z > p->z) {
+                continue;
+            }
+
+            free_node(h->nodes[i]);
+            h->nodes[i] = NULL;
+            h->count--;
+        }
     }
 }
 
@@ -564,7 +575,7 @@ int branch(struct node_t* q, double z) {
     return 0;
 }
 
-void succ(struct node_t* p, struct list_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
+void succ(struct node_t* p, struct set_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
     struct node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
 
     if (q == NULL) {
@@ -587,9 +598,7 @@ void succ(struct node_t* p, struct list_t* h, int m, int n, double** a, double* 
 
 double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     struct node_t* p = initial_node(m, n, a, b, c);
-    struct list_t* h = (struct list_t*)calloc(1, sizeof(struct list_t));
-    h->node = p;
-    h->next = NULL;
+    struct set_t* h = create_set();
 
     double z = -INFINITY;
     p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0);
@@ -600,7 +609,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
             memcpy(x, p->x, p->n + 1);
         }
         free_node(p);
-        free_list(h);
+        free_set(h);
         return z;
     }
 
@@ -633,14 +642,79 @@ void free_node(struct node_t* p) {
     free(p);
 }
 
-void free_list(struct list_t* h) {
-    struct list_t* next = h->next;
+struct set_t* create_set() {
+    struct set_t* h = (struct set_t*)calloc(1, sizeof(struct set_t));
+    h->alloc = 10;
+    h->count = 0;
+    h->nodes = (struct node_t**)calloc(h->alloc, sizeof(struct node_t*));
 
-    while (next != NULL) {
-        free(h);
-        h = next;
-        next = next->next;
+    for (int i = 0; i < h->alloc; i++) {
+        h->nodes[i] = NULL;
+    }
+}
+
+void add(struct set_t* h, struct node_t* p) {
+    int i;
+
+    if (h->count < h->alloc) {
+        for (i = 0; i < h->alloc; i++) {
+            if ((h->nodes)[i] == NULL) {
+                h->nodes[i] = p;
+                h->count++;
+                return;
+            }
+        }
+    } else {
+        h->alloc = h->alloc * 2;
+        h->nodes = (struct node_t**)realloc(h->nodes, h->alloc * sizeof(struct node_t*));
+        h->nodes[h->count] = p;
+        h->count++;
+    }
+}
+
+int size(struct set_t* h) {
+    return h->count;
+}
+
+void remove(struct set_t* h, struct node_t* p) {
+    for (int i = 0; i < h->alloc; i++) {
+        if (h->nodes[i] == p) {
+            free(h->nodes[i]);
+            h->nodes[i] = NULL;
+            h->count--;
+            break;
+        }
     }
 
+    if (h->count == 0) {
+        free_set(h);
+    }
+}
+
+struct node_t* pop(struct set_t* h) {
+    struct node_t* p;
+    for (int i = 0; i < h->alloc; i++) {
+        if ((h->nodes)[i]) {
+            p = h->nodes[i];
+            h->nodes[i] = NULL;
+            h->count--;
+            break;
+        }
+    }
+
+    if (h->count == 0) {
+        free_set(h);
+    }
+
+    return p;
+}
+
+
+void free_set(struct set_t* h) {
+    for (int i = 0; i < h->alloc; i++) {
+        if (h->nodes[i]) {
+            free_node(h->nodes[i]);
+        }
+    }
     free(h);
 }
