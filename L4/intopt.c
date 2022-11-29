@@ -652,6 +652,8 @@ struct set_t* create_set() {
     for (int i = 0; i < h->alloc; i++) {
         h->nodes[i] = NULL;
     }
+
+    return h;
 }
 
 void add(struct set_t* h, struct node_t* p) {
