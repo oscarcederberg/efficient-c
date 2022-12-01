@@ -98,7 +98,6 @@ int main() {
     double* b;
     double* c;
     double* x;
-    double y;
     size_t i;
 
     //
@@ -124,7 +123,9 @@ int main() {
     for (i = 0; i < m; i++) {
         scanf("%lf", &b[i]);
     }
-    printf("result: %lf\n", intopt(m, n, a, b, c, x));
+
+    double z = intopt(m, n, a, b, c, x);
+    printf("result: %lf\n", z);
 
     free(b);
     for (i = 0; i < m; i++) {
@@ -140,15 +141,15 @@ double simplex(int m, int n, double** a, double* b, double* c, double* x, double
 }
 
 double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h) {
-    struct simplex_t   s;
+    struct simplex_t*   s = (struct simplex_t*)calloc(1, sizeof(struct simplex_t));
     int                 i, row, col;
 
-    if (!initial(&s, m, n, a, b, c, x, y, var)) {
-        free(s.var);
+    if (!initial(s, m, n, a, b, c, x, y, var)) {
+        free(s->var);
         return NAN; //not a number.
     }
 
-    while ((col = select_nonbasic(&s)) >= 0) {
+    while ((col = select_nonbasic(s)) >= 0) {
         row = -1;
         for (i = 0; i < m; i++) {
             if (a[i][col] > epsilon &&
@@ -158,36 +159,36 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         if (row < 0) {
-            free(s.var);
+            free(s->var);
             return INFINITY; //unbounded.
         }
 
-        pivot(&s, row, col);
+        pivot(s, row, col);
         //print(s);
     }
 
     if (h == 0) {
         for (i = 0; i < n; i++) {
-            if (s.var[i] < n) {
-                x[s.var[i]] = 0;
+            if (s->var[i] < n) {
+                x[s->var[i]] = 0;
             }
         }
         for (i = 0; i < m; i++) {
-            if (s.var[n + i] < n) {
-                x[s.var[n + i]] = s.b[i];
+            if (s->var[n + i] < n) {
+                x[s->var[n + i]] = s->b[i];
             }
         }
-        free(s.var);
+        free(s->var);
     } else {
         for (i = 0; i < n; i++) {
             x[i] = 0;
         }
         for (i = n; i < n + m; i++) {
-            x[i] = s.b[i - n];
+            x[i] = s->b[i - n];
         }
     }
 
-    return s.y;
+    return s->y;
 }
 
 void pivot(struct simplex_t* s, int row, int col) {
@@ -475,10 +476,10 @@ struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, dou
     memcpy(q->c, c, n * sizeof(double));
 
     if (ak > 0) {
-        if (q->max[k] = INFINITY || bk < q->max[k]) {
+        if (q->max[k] == INFINITY || bk < q->max[k]) {
             q->max[k] = bk;
         }
-    } else if (q->min[k] = -INFINITY || -bk > q->min[k]) {
+    } else if (q->min[k] == -INFINITY || -bk > q->min[k]) {
         q->min[k] = -bk;
     }
 
@@ -547,7 +548,7 @@ int branch(struct node_t* q, double z) {
 
     for (h = 0; h < q->n; h++) {
         if (!is_integer(&(q->x[h]))) {
-            if (q->min[h] = -INFINITY) {
+            if (q->min[h] == -INFINITY) {
                 min = 0;
             } else {
                 min = q->min[h];
@@ -626,7 +627,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         free(p);
     }
 
-    if (z = -INFINITY) {
+    if (z == -INFINITY) {
         return NAN;
     } else {
         return z;
@@ -706,8 +707,8 @@ struct node_t* pop(struct set_t* h) {
 
 void free_set(struct set_t* h) {
     for (int i = 0; i < h->alloc; i++) {
-        if (h->nodes[i]) {
-            free_node(h->nodes[i]);
+        if (h->nodes[i] != NULL) {
+            //free_node(h->nodes[i]);
         }
     }
     free(h->nodes);
