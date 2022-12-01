@@ -64,7 +64,7 @@ int size(struct set_t* h);
 struct node_t* pop(struct set_t* h);
 void free_set(struct set_t* h);
 
-void print(struct simplex_t* s) {
+void print_simplex(struct simplex_t* s) {
     printf("%14s = %10d\n%14s = %10d\n", "m", s->m, "n", s->n);
     printf("%14s = ", "max z");
     for (size_t i = 0; i < s->n; i++)
@@ -88,6 +88,54 @@ void print(struct simplex_t* s) {
         }
         printf("\n");
     }
+    printf("--------------------------\n");
+}
+
+void print_node(struct node_t* p) {
+    printf("%14s = %10d\n%14s = %10d\n", "m", p->m, "n", p->n);
+    printf("%14s = %10d\n%14s = %10d\n", "h", p->h, "k", p->k);
+    printf("%14s = %10.3lf\n%14s = %10.3lf\n%14s = %10.3lf\n", "xh", p->xh, "ak", p->ak, "bk", p->bk);
+    printf("%14s = ", "max z");
+    for (size_t i = 0; i < p->n + 1; i++)
+    {
+        printf("%10.3lf*x_%ld", p->c[i], i);
+        if(i != p->n){
+            printf(" + ");
+        }
+    }
+    printf("\n");
+    for (size_t i = 0; i < p->m + 1; i++)
+    {
+        for (size_t j = 0; j < p->n + 1; j++)
+        {
+            printf("%10.3lf*x_%ld", p->a[i][j], j);
+            if(j != p->n){
+                printf(" + ");
+            } else {
+                printf(" \u2264 %10.3lf", p->b[i]);
+            }
+        }
+        printf("\n");
+    }
+    printf("%14s = ", "min");
+    for (size_t i = 0; i < p->n + 1; i++)
+    {
+        printf("%10d", p->min[i]);
+        if(i != p->n){
+            printf(", ");
+        }
+    }
+    printf("\n");
+    printf("%14s = ", "max");
+    for (size_t i = 0; i < p->n + 1; i++)
+    {
+        printf("%10d", p->max[i]);
+        if(i != p->n){
+            printf(", ");
+        }
+    }
+    printf("\n");
+    printf("%14s = %10.3lf\n", "z", p->z);
     printf("--------------------------\n");
 }
 
@@ -164,7 +212,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
 
         pivot(s, row, col);
-        //print(s);
+        //print_simplex(s);
     }
 
     if (h == 0) {
