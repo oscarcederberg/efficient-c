@@ -623,7 +623,9 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         struct node_t* q = pop(h);
         succ(q, h, m, n, a, b, c, q->h, 1, floor(q->xh), &z, x);
         succ(q, h, m, n, a, b, c, q->h, -1, -ceil(q->xh), &z, x);
-        free_node(q);
+        free(p->min);
+        free(p->max);
+        free(p);
     }
 
     if (z = -INFINITY) {
