@@ -470,10 +470,10 @@ struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, dou
     memcpy(q->min, p->min, n * sizeof(double));
     memcpy(q->max, p->max, n * sizeof(double));
     for (i = 0; i < m; i++) {
-        memcpy(q->a[i], a[i], q->n + 1);
+        memcpy(q->a[i], a[i], n);
     }
     memcpy(q->b, b, m * sizeof(double));
-    memcpy(q->c, c, (n + 1) * sizeof(double));
+    memcpy(q->c, c, n * sizeof(double));
 
     if (ak > 0) {
         if (q->max[k] = INFINITY || bk < q->max[k]) {
@@ -487,12 +487,12 @@ struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, dou
         if (q->min[j] > -INFINITY) {
             q->a[i][j] = -1;
             q->b[i] = -q->min[j];
-            i += 1;
+            i++;
         }
         if (q->max[j] < INFINITY) {
             q->a[i][j] = 1;
             q->b[i] = q->max[j];
-            i += 1;
+            i++;
         }
     }
     return q;
