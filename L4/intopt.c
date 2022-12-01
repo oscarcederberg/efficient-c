@@ -425,10 +425,10 @@ struct node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     }
 
     for (i = 0; i < m; i++) {
-        memcpy(p->a[i], a[i], p->n + 1);
+        memcpy(p->a[i], a[i], (p->n + 1) * sizeof(double));
     }
-    memcpy(p->b, b, m + 1);
-    memcpy(p->c, c, n + 1);
+    memcpy(p->b, b, (m + 1) * sizeof(double));
+    memcpy(p->c, c, (n + 1) * sizeof(double));
 
     for (i = 0; i < n; i++) {
         p->min[i] = -INFINITY;
@@ -468,13 +468,13 @@ struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, dou
         q->a[i] = (double*)calloc(q->n + 1, sizeof(double));
     }
 
-    memcpy(q->min, p->min, n);
-    memcpy(q->max, p->max, n);
+    memcpy(q->min, p->min, n * sizeof(double));
+    memcpy(q->max, p->max, n * sizeof(double));
     for (i = 0; i < m; i++) {
         memcpy(q->a[i], a[i], q->n + 1);
     }
-    memcpy(q->b, b, q->m);
-    memcpy(q->c, c, q->n + 1);
+    memcpy(q->b, b, q->m * sizeof(double));
+    memcpy(q->c, c, (q->n + 1) * sizeof(double));
 
     if (ak > 0) {
         if (q->max[k] = INFINITY || bk < q->max[k]) {
@@ -525,7 +525,7 @@ int integer(struct node_t* p) {
 void bound(struct node_t* p, struct set_t* h, double* zp, double* x) {
     if (p->z > *zp) {
         *zp = p->z;
-        memcpy(x, p->x, p->n + 1);
+        memcpy(x, p->x, (p->n + 1) * sizeof(double));
 
         for (int i = 0; i < h->alloc; i++) {
             if (!h->nodes[i] || h->nodes[i]->z > p->z) {
@@ -609,7 +609,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
     if (integer(p) || !isfinite(p->z)) {
         z = p->z;
         if (integer(p)) {
-            memcpy(x, p->x, p->n + 1);
+            memcpy(x, p->x, (p->n + 1) * sizeof(double));
         }
         free_node(p);
         free_set(h);
