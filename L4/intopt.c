@@ -473,8 +473,8 @@ struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, dou
     for (i = 0; i < m; i++) {
         memcpy(q->a[i], a[i], q->n + 1);
     }
-    memcpy(q->b, b, q->m * sizeof(double));
-    memcpy(q->c, c, (q->n + 1) * sizeof(double));
+    memcpy(q->b, b, m * sizeof(double));
+    memcpy(q->c, c, (n + 1) * sizeof(double));
 
     if (ak > 0) {
         if (q->max[k] = INFINITY || bk < q->max[k]) {
