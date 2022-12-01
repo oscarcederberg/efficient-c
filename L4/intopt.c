@@ -547,7 +547,7 @@ int branch(struct node_t* q, double z) {
         return 0;
     }
 
-    for (h = 0; h < q->n; q++) {
+    for (h = 0; h < q->n; h++) {
         if (!is_integer(&(q->x[h]))) {
             if (q->min[h] = -INFINITY) {
                 min = 0;
