@@ -620,8 +620,8 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
 
     while (size(h) > 0) {
         struct node_t* q = pop(h);
-        succ(q, h, m, n, a, b, c, q->h, 1, fabs(q->xh), &z, x);
-        succ(q, h, m, n, a, b, c, q->h, -1, -fabs(q->xh), &z, x);
+        succ(q, h, m, n, a, b, c, q->h, 1, floor(q->xh), &z, x);
+        succ(q, h, m, n, a, b, c, q->h, -1, -ceil(q->xh), &z, x);
         free_node(q);
     }
 
