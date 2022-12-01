@@ -412,6 +412,9 @@ struct node_t* initial_node(int m, int n, double** a, double* b, double* c) {
 
     struct node_t* p = (struct node_t*)calloc(1, sizeof(struct node_t));
     p->a = (double**)calloc(m + 1, sizeof(double*));
+    for (i = 0; i < m + 1; i++) {
+        p->a[i] = (double*)calloc(n + 1, sizeof(double));
+    }
     p->b = (double*)calloc(m + 1, sizeof(double));
     p->c = (double*)calloc(n + 1, sizeof(double));
     p->x = (double*)calloc(n + 1, sizeof(double));
@@ -420,15 +423,11 @@ struct node_t* initial_node(int m, int n, double** a, double* b, double* c) {
     p->m = m;
     p->n = n;
 
-    for (i = 0; i < m + 1; i++) {
-        p->a[i] = (double*)calloc(n + 1, sizeof(double));
-    }
-
     for (i = 0; i < m; i++) {
-        memcpy(p->a[i], a[i], (p->n + 1) * sizeof(double));
+        memcpy(p->a[i], a[i], n * sizeof(double));
     }
-    memcpy(p->b, b, (m + 1) * sizeof(double));
-    memcpy(p->c, c, (n + 1) * sizeof(double));
+    memcpy(p->b, b, m * sizeof(double));
+    memcpy(p->c, c, n * sizeof(double));
 
     for (i = 0; i < n; i++) {
         p->min[i] = -INFINITY;
