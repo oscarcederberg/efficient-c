@@ -672,6 +672,9 @@ void add(struct set_t* h, struct node_t* p) {
     } else {
         h->alloc = h->alloc * 2;
         h->nodes = (struct node_t**)realloc(h->nodes, h->alloc * sizeof(struct node_t*));
+        for (i = h->count; i < h->alloc; i++) {
+            h->nodes[i] = NULL;
+        }
         h->nodes[h->count] = p;
         h->count++;
     }
