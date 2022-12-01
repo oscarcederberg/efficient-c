@@ -458,15 +458,14 @@ struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, dou
     q->h = -1;
 
     q->a = (double**)calloc(q->m + 1, sizeof(double*));
+    for (i = 0; i < q->m + 1; i++) {
+        q->a[i] = (double*)calloc(q->n + 1, sizeof(double));
+    }
     q->b = (double*)calloc(q->m + 1, sizeof(double));
     q->c = (double*)calloc(q->n + 1, sizeof(double));
     q->x = (double*)calloc(q->n + 1, sizeof(double));
     q->min = (double*)calloc(n, sizeof(double));
     q->max = (double*)calloc(n, sizeof(double));
-
-    for (i = 0; i < m + 1; i++) {
-        q->a[i] = (double*)calloc(q->n + 1, sizeof(double));
-    }
 
     memcpy(q->min, p->min, n * sizeof(double));
     memcpy(q->max, p->max, n * sizeof(double));
