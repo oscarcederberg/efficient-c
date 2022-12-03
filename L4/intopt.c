@@ -608,6 +608,7 @@ int branch(struct node_t* q, double z) {
                 continue;
             }
 
+            q->h = h;
             q->xh = q->x[h];
 
             for (int i = 0; i < q->m + 1; i++) {
