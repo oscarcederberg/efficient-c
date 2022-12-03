@@ -120,7 +120,7 @@ void print_node(struct node_t* p) {
     printf("%14s = ", "min");
     for (size_t i = 0; i < p->n + 1; i++)
     {
-        printf("%10d", p->min[i]);
+        printf("%10.3lf", p->min[i]);
         if(i != p->n){
             printf(", ");
         }
@@ -129,7 +129,7 @@ void print_node(struct node_t* p) {
     printf("%14s = ", "max");
     for (size_t i = 0; i < p->n + 1; i++)
     {
-        printf("%10d", p->max[i]);
+        printf("%10.3lf", p->max[i]);
         if(i != p->n){
             printf(", ");
         }
@@ -675,6 +675,8 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         free(p);
     }
 
+    free_set(h);
+
     if (z == -INFINITY) {
         return NAN;
     } else {
@@ -743,10 +745,6 @@ struct node_t* pop(struct set_t* h) {
             h->count--;
             break;
         }
-    }
-
-    if (h->count == 0) {
-        free_set(h);
     }
 
     return p;
