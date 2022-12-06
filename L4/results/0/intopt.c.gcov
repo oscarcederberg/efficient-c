@@ -1,0 +1,1099 @@
+        -:    0:Source:intopt.c
+        -:    0:Graph:intopt.gcno
+        -:    0:Data:intopt.gcda
+        -:    0:Runs:1
+        -:    0:Programs:1
+        -:    0:Source is newer than graph
+        -:    1:#include <stdio.h>
+        -:    2:#include <stdlib.h>
+        -:    3:#include <string.h>
+        -:    4:#include <math.h>
+        -:    5:
+        -:    6:double epsilon = 10e-6;
+        -:    7:
+        -:    8:struct simplex_t {
+        -:    9:    int         m;
+        -:   10:    int         n;
+        -:   11:    int*        var;
+        -:   12:    double**    a;
+        -:   13:    double*     b;
+        -:   14:    double*     x;
+        -:   15:    double*     c;
+        -:   16:    double      y;
+        -:   17:};
+        -:   18:
+        -:   19:struct node_t {
+        -:   20:    int         m;
+        -:   21:    int         n;
+        -:   22:    int         k;
+        -:   23:    int         h;
+        -:   24:    double      xh;
+        -:   25:    double      ak;
+        -:   26:    double      bk;
+        -:   27:    double*     min;
+        -:   28:    double*     max;
+        -:   29:    double**    a;
+        -:   30:    double*     b;
+        -:   31:    double*     x;
+        -:   32:    double*     c;
+        -:   33:    double      z;
+        -:   34:};
+        -:   35:
+        -:   36:struct set_t {
+        -:   37:    int             count;
+        -:   38:    int             alloc;
+        -:   39:    struct node_t** nodes;
+        -:   40:};
+        -:   41:
+        -:   42:double simplex(int m, int n, double** a, double* b, double* c, double* x, double y);
+        -:   43:double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h);
+        -:   44:void pivot(struct simplex_t* s, int row, int col);
+        -:   45:int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var);
+        -:   46:void prepare(struct simplex_t* s, int k);
+        -:   47:int select_nonbasic(struct simplex_t* s);
+        -:   48:int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var);
+        -:   49:
+        -:   50:struct node_t* initial_node(int m, int n, double** a, double* b, double* c);
+        -:   51:struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk);
+        -:   52:int is_integer(double* xp);
+        -:   53:int integer(struct node_t* p);
+        -:   54:void bound(struct node_t* p, struct set_t* h, double* zp, double* x);
+        -:   55:int branch(struct node_t* q, double z);
+        -:   56:void succ(struct node_t* p, struct set_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x);
+        -:   57:double intopt(int m, int n, double** a, double* b, double* c, double* x);
+        -:   58:
+        -:   59:void free_node(struct node_t* p);
+        -:   60:
+        -:   61:struct set_t* create_set();
+        -:   62:void add(struct set_t* h, struct node_t* p);
+        -:   63:int size(struct set_t* h);
+        -:   64:struct node_t* pop(struct set_t* h);
+        -:   65:void free_set(struct set_t* h);
+        -:   66:
+function print_simplex called 0 returned 0% blocks executed 0%
+    #####:   67:void print_simplex(struct simplex_t* s) {
+    #####:   68:    printf("%14s = %10d\n%14s = %10d\n", "m", s->m, "n", s->n);
+call    0 never executed
+    #####:   69:    printf("%14s = ", "max z");
+call    0 never executed
+    #####:   70:    for (size_t i = 0; i < s->n; i++)
+branch  0 never executed
+branch  1 never executed
+        -:   71:    {
+    #####:   72:        printf("%10.3lf*x_%ld", s->c[i], i);
+call    0 never executed
+    #####:   73:        if(i != s->n - 1){
+branch  0 never executed
+branch  1 never executed
+    #####:   74:            printf(" + ");
+call    0 never executed
+        -:   75:        }
+        -:   76:    }
+    #####:   77:    printf("\n");
+call    0 never executed
+    #####:   78:    for (size_t i = 0; i < s->m; i++)
+branch  0 never executed
+branch  1 never executed
+        -:   79:    {
+    #####:   80:        for (size_t j = 0; j < s->n; j++)
+branch  0 never executed
+branch  1 never executed
+        -:   81:        {
+    #####:   82:            printf("%10.3lf*x_%ld", s->a[i][j], j);
+call    0 never executed
+    #####:   83:            if(j != s->n - 1){
+branch  0 never executed
+branch  1 never executed
+    #####:   84:                printf(" + ");
+call    0 never executed
+        -:   85:            } else {
+    #####:   86:                printf(" \u2264 %10.3lf", s->b[i]);
+call    0 never executed
+        -:   87:            }
+        -:   88:        }
+    #####:   89:        printf("\n");
+call    0 never executed
+        -:   90:    }
+    #####:   91:    printf("--------------------------\n");
+call    0 never executed
+    #####:   92:}
+        -:   93:
+function print_node called 0 returned 0% blocks executed 0%
+    #####:   94:void print_node(struct node_t* p) {
+    #####:   95:    printf("%14s = %10d\n%14s = %10d\n", "m", p->m, "n", p->n);
+call    0 never executed
+    #####:   96:    printf("%14s = %10d\n%14s = %10d\n", "h", p->h, "k", p->k);
+call    0 never executed
+    #####:   97:    printf("%14s = %10.3lf\n%14s = %10.3lf\n%14s = %10.3lf\n", "xh", p->xh, "ak", p->ak, "bk", p->bk);
+call    0 never executed
+    #####:   98:    printf("%14s = ", "max z");
+call    0 never executed
+    #####:   99:    for (size_t i = 0; i < p->n + 1; i++)
+branch  0 never executed
+branch  1 never executed
+        -:  100:    {
+    #####:  101:        printf("%10.3lf*x_%ld", p->c[i], i);
+call    0 never executed
+    #####:  102:        if(i != p->n){
+branch  0 never executed
+branch  1 never executed
+    #####:  103:            printf(" + ");
+call    0 never executed
+        -:  104:        }
+        -:  105:    }
+    #####:  106:    printf("\n");
+call    0 never executed
+    #####:  107:    for (size_t i = 0; i < p->m + 1; i++)
+branch  0 never executed
+branch  1 never executed
+        -:  108:    {
+    #####:  109:        for (size_t j = 0; j < p->n + 1; j++)
+branch  0 never executed
+branch  1 never executed
+        -:  110:        {
+    #####:  111:            printf("%10.3lf*x_%ld", p->a[i][j], j);
+call    0 never executed
+    #####:  112:            if(j != p->n){
+branch  0 never executed
+branch  1 never executed
+    #####:  113:                printf(" + ");
+call    0 never executed
+        -:  114:            } else {
+    #####:  115:                printf(" \u2264 %10.3lf", p->b[i]);
+call    0 never executed
+        -:  116:            }
+        -:  117:        }
+    #####:  118:        printf("\n");
+call    0 never executed
+        -:  119:    }
+    #####:  120:    printf("%14s = ", "min");
+call    0 never executed
+    #####:  121:    for (size_t i = 0; i < p->n + 1; i++)
+branch  0 never executed
+branch  1 never executed
+        -:  122:    {
+    #####:  123:        printf("%10.3lf", p->min[i]);
+call    0 never executed
+    #####:  124:        if(i != p->n){
+branch  0 never executed
+branch  1 never executed
+    #####:  125:            printf(", ");
+call    0 never executed
+        -:  126:        }
+        -:  127:    }
+    #####:  128:    printf("\n");
+call    0 never executed
+    #####:  129:    printf("%14s = ", "max");
+call    0 never executed
+    #####:  130:    for (size_t i = 0; i < p->n + 1; i++)
+branch  0 never executed
+branch  1 never executed
+        -:  131:    {
+    #####:  132:        printf("%10.3lf", p->max[i]);
+call    0 never executed
+    #####:  133:        if(i != p->n){
+branch  0 never executed
+branch  1 never executed
+    #####:  134:            printf(", ");
+call    0 never executed
+        -:  135:        }
+        -:  136:    }
+    #####:  137:    printf("\n");
+call    0 never executed
+    #####:  138:    printf("%14s = %10.3lf\n", "z", p->z);
+call    0 never executed
+    #####:  139:    printf("--------------------------\n");
+call    0 never executed
+    #####:  140:}
+        -:  141:
+function main called 1 returned 100% blocks executed 100%
+        1:  142:int main() {
+        -:  143:    int m;
+        -:  144:    int n;
+        -:  145:    double** a;
+        -:  146:    double* b;
+        -:  147:    double* c;
+        -:  148:    double* x;
+        -:  149:    size_t i;
+        -:  150:
+        -:  151:    //
+        -:  152:    // Scan input
+        -:  153:    //
+        1:  154:    scanf("%d", &m);
+call    0 returned 100%
+        1:  155:    scanf("%d", &n);
+call    0 returned 100%
+        -:  156:
+        1:  157:    a = (double**)calloc(m + n, sizeof(double*));
+        1:  158:    b = (double*)calloc(m + n, sizeof(double));
+        1:  159:    c = (double*)calloc(n + 1, sizeof(double));
+        1:  160:    x = (double*)calloc(n + m + 1, sizeof(double));
+        -:  161:
+       21:  162:    for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       20:  163:        scanf("%lf", &c[i]);
+call    0 returned 100%
+        -:  164:    }
+       21:  165:    for (i = 0; i < m; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       20:  166:        a[i] = (double*)calloc(n + 1, sizeof(double));
+      420:  167:        for (size_t j = 0; j < n; j++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+      400:  168:            scanf("%lf",&a[i][j]);
+call    0 returned 100%
+        -:  169:        }
+        -:  170:    }
+       21:  171:    for (i = 0; i < m; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       20:  172:        scanf("%lf", &b[i]);
+call    0 returned 100%
+        -:  173:    }
+        -:  174:
+        1:  175:    double z = intopt(m, n, a, b, c, x);
+call    0 returned 100%
+        1:  176:    printf("result: %lf\n", z);
+call    0 returned 100%
+        -:  177:
+        1:  178:    free(b);
+       21:  179:    for (i = 0; i < m; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       20:  180:        free(a[i]);
+        -:  181:    }
+        1:  182:    free(a);
+        1:  183:    free(c);
+        1:  184:    free(x);
+        -:  185:}
+        -:  186:
+function simplex called 15067 returned 100% blocks executed 100%
+    15067:  187:double simplex(int m, int n, double** a, double* b, double* c, double* x, double y) {
+    15067:  188:    return xsimplex(m, n, a, b, c, x, y, NULL, 0);
+call    0 returned 100%
+        -:  189:}
+        -:  190:
+function xsimplex called 30081 returned 100% blocks executed 97%
+    30081:  191:double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h) {
+    30081:  192:    struct simplex_t*   s = (struct simplex_t*)calloc(1, sizeof(struct simplex_t));
+        -:  193:    int                 i, row, col;
+        -:  194:
+    30081:  195:    if (!initial(s, m, n, a, b, c, x, y, var)) {
+call    0 returned 100%
+branch  1 taken 9% (fallthrough)
+branch  2 taken 91%
+     2624:  196:        free(s->var);
+     2624:  197:        free(s);
+     2624:  198:        return NAN; //not a number.
+        -:  199:    }
+        -:  200:
+  1017858:  201:    while ((col = select_nonbasic(s)) >= 0) {
+call    0 returned 100%
+branch  1 taken 97%
+branch  2 taken 3% (fallthrough)
+   962944:  202:        row = -1;
+ 32582866:  203:        for (i = 0; i < m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+ 31619922:  204:            if (a[i][col] > epsilon &&
+branch  0 taken 49% (fallthrough)
+branch  1 taken 51%
+branch  2 taken 94% (fallthrough)
+branch  3 taken 6%
+ 14415532:  205:            (row < 0 || b[i] / a[i][col] < b[row] / a[row][col])) {
+branch  0 taken 16% (fallthrough)
+branch  1 taken 84%
+  3281208:  206:                row = i;
+        -:  207:            }
+        -:  208:        }
+        -:  209:
+   962944:  210:        if (row < 0) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  211:            free(s->var);
+    #####:  212:            free(s);
+    #####:  213:            return INFINITY; //unbounded.
+        -:  214:        }
+        -:  215:
+   962944:  216:        pivot(s, row, col);
+call    0 returned 100%
+        -:  217:        //print_simplex(s);
+        -:  218:    }
+        -:  219:
+    27457:  220:    if (h == 0) {
+branch  0 taken 45% (fallthrough)
+branch  1 taken 55%
+   261303:  221:        for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+   248860:  222:            if (s->var[i] < n) {
+branch  0 taken 33% (fallthrough)
+branch  1 taken 67%
+    83063:  223:                x[s->var[i]] = 0;
+        -:  224:            }
+        -:  225:        }
+   414736:  226:        for (i = 0; i < m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   402293:  227:            if (s->var[n + i] < n) {
+branch  0 taken 41% (fallthrough)
+branch  1 taken 59%
+   165797:  228:                x[s->var[n + i]] = s->b[i];
+        -:  229:            }
+        -:  230:        }
+    12443:  231:        free(s->var);
+        -:  232:    } else {
+   330308:  233:        for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+   315294:  234:            x[i] = 0;
+        -:  235:        }
+   505688:  236:        for (i = n; i < n + m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   490674:  237:            x[i] = s->b[i - n];
+        -:  238:        }
+        -:  239:    }
+        -:  240:
+    27457:  241:    double result = s->y;
+    27457:  242:    free(s);
+    27457:  243:    return result;
+        -:  244:}
+        -:  245:
+function pivot called 987802 returned 100% blocks executed 100%
+   987802:  246:void pivot(struct simplex_t* s, int row, int col) {
+   987802:  247:    double** a = s->a;
+   987802:  248:    double* b = s->b;
+   987802:  249:    double* c = s->c;
+   987802:  250:    int m = s->m;
+   987802:  251:    int n = s->n;
+        -:  252:    int i, j, t;
+        -:  253:
+   987802:  254:    t = s->var[col];
+   987802:  255:    s->var[col] = s->var[n + row];
+   987802:  256:    s->var[n + row] = t;
+   987802:  257:    s->y = s->y + c[col] * b[row] / a[row][col];
+        -:  258:
+ 21281013:  259:    for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+ 20293211:  260:        if (i != col) {
+branch  0 taken 95% (fallthrough)
+branch  1 taken 5%
+ 19305409:  261:            c[i] = c[i] - c[col] * a[row][i] / a[row][col];
+        -:  262:        }
+        -:  263:    }
+   987802:  264:    c[col] = -c[col] / a[row][col];
+        -:  265:
+ 33422538:  266:    for (i = 0; i < m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+ 32434736:  267:        if (i != row) {
+branch  0 taken 97% (fallthrough)
+branch  1 taken 3%
+ 31446934:  268:            b[i] = b[i] - a[i][col] * b[row] / a[row][col];
+        -:  269:        }
+        -:  270:    }
+        -:  271:
+ 33422538:  272:    for (i = 0; i < m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+ 32434736:  273:        if (i != row) {
+branch  0 taken 97% (fallthrough)
+branch  1 taken 3%
+677905422:  274:            for (j = 0; j < n; j++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+646458488:  275:                if (j != col) {
+branch  0 taken 95% (fallthrough)
+branch  1 taken 5%
+615011554:  276:                    a[i][j] = a[i][j] - a[i][col] * a[row][j] / a[row][col];
+        -:  277:                }
+        -:  278:            }
+        -:  279:        }
+        -:  280:    }
+        -:  281:
+ 33422538:  282:    for (i = 0; i < m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+ 32434736:  283:        if (i != row) {
+branch  0 taken 97% (fallthrough)
+branch  1 taken 3%
+ 31446934:  284:            a[i][col] = -a[i][col] / a[row][col];
+        -:  285:        }
+        -:  286:    }
+        -:  287:
+ 21281013:  288:    for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+ 20293211:  289:        if (i != col) {
+branch  0 taken 95% (fallthrough)
+branch  1 taken 5%
+ 19305409:  290:            a[row][i] = a[row][i] / a[row][col];
+        -:  291:        }
+        -:  292:    }
+        -:  293:
+   987802:  294:    b[row] = b[row] / a[row][col];
+   987802:  295:    a[row][col] = 1 / a[row][col];
+   987802:  296:}
+        -:  297:
+function initial called 30081 returned 100% blocks executed 100%
+    30081:  298:int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) {
+        -:  299:    int             i, j, k;
+        -:  300:    double          w;
+        -:  301:
+    30081:  302:    k = init(s, m, n, a, b, c, x, y, var);
+call    0 returned 100%
+        -:  303:
+    30081:  304:    if (b[k] >= 0) {
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+    15067:  305:      return 1; //feasible.
+        -:  306:    }
+        -:  307:
+    15014:  308:    prepare(s, k);
+call    0 returned 100%
+    15014:  309:    n = s->n;
+    15014:  310:    s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var, 1);
+call    0 returned 100%
+        -:  311:
+   611562:  312:    for (i = 0; i < m + n; i++) {
+branch  0 taken 100%
+branch  1 taken 0% (fallthrough)
+   611562:  313:        if (s->var[i] == m + n - 1) {
+branch  0 taken 2% (fallthrough)
+branch  1 taken 98%
+    15014:  314:            if (fabs(s->x[i]) > epsilon) {
+branch  0 taken 17% (fallthrough)
+branch  1 taken 83%
+     2624:  315:                free(s->x);
+     2624:  316:                free(s->c);
+     2624:  317:                return 0; //infeasible.
+        -:  318:            } else {
+    12390:  319:                break;
+        -:  320:            }
+        -:  321:        }
+        -:  322:    }
+        -:  323:
+    12390:  324:    if (i >= n) {
+branch  0 taken 79% (fallthrough)
+branch  1 taken 21%
+        -:  325:        // x_{n+m} is basic. find good nonbasic.
+   216568:  326:        for (j = k = 0; k < n; k++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+        -:  327:            //printf("|%lf| > |%lf|\n", s->a[i - n][k], s->a[i - n][j]);
+   206724:  328:            if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
+branch  0 taken 10% (fallthrough)
+branch  1 taken 90%
+    20279:  329:                j = k;
+        -:  330:            }
+        -:  331:        }
+     9844:  332:        pivot(s, i - n, j);
+call    0 returned 100%
+     9844:  333:        i = j;
+        -:  334:    }
+        -:  335:
+    12390:  336:    if (i < n - 1) {
+branch  0 taken 99% (fallthrough)
+branch  1 taken 1%
+        -:  337:        //x_{n+m} is nonbasic and not last. swap columns i and n-1.
+    12389:  338:        k = s->var[i];
+    12389:  339:        s->var[i] = s->var[n - 1];
+    12389:  340:        s->var[n - 1] = k;
+   413115:  341:        for (k = 0; k < m; k++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   400726:  342:            w = s->a[k][n - 1];
+   400726:  343:            s->a[k][n - 1] = s->a[k][i];
+   400726:  344:            s->a[k][i] = w;
+        -:  345:        }
+        -:  346:    } else {
+        -:  347:        //x_{n+m} is nonbasic and last. forget it.
+        -:  348:    }
+        -:  349:
+    12390:  350:    free(s->c);
+    12390:  351:    s->c = c;
+    12390:  352:    s->y = y;
+        -:  353:
+   413151:  354:    for (k = n - 1; k < n + m - 1; k++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   400761:  355:        s->var[k] = s->var[k + 1];
+        -:  356:    }
+        -:  357:
+    12390:  358:    n = s->n = s->n - 1;
+    12390:  359:    double* t = (double*)calloc(n, sizeof(double));
+        -:  360:
+        -:  361:    int next_k;
+   260190:  362:    for (k = 0; k < n; k++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+   247800:  363:        next_k = 0;
+  4279797:  364:        for (j = 0; j < n; j++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+  4154463:  365:           if (k == s->var[j]) {
+branch  0 taken 3% (fallthrough)
+branch  1 taken 97%
+        -:  366:               //x_k is nonbasic. add c_k.
+   122466:  367:               t[j] = t[j] + s->c[k];
+   122466:  368:               next_k = 1;
+   122466:  369:               break;
+        -:  370:           }
+        -:  371:        }
+        -:  372:
+   247800:  373:        if (next_k)
+branch  0 taken 49% (fallthrough)
+branch  1 taken 51%
+   122466:  374:            continue;
+        -:  375:
+  2194345:  376:        for (j = 0; j < m; j++) {
+branch  0 taken 100%
+branch  1 taken 0% (fallthrough)
+  2194345:  377:           if (s->var[n + j] == k) {
+branch  0 taken 6% (fallthrough)
+branch  1 taken 94%
+        -:  378:               //x_k is at row j.
+   125334:  379:               break;
+        -:  380:           }
+        -:  381:        }
+        -:  382:
+   125334:  383:        s->y = s->y + s->c[k] * s->b[j];
+        -:  384:
+  2632014:  385:        for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+  2506680:  386:            t[i] = t[i] - s->c[k] * s->a[j][i];
+        -:  387:        }
+        -:  388:    }
+        -:  389:
+   260190:  390:    for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+   247800:  391:        s->c[i] = t[i];
+        -:  392:    }
+        -:  393:
+    12390:  394:    free(t);
+    12390:  395:    free(s->x);
+        -:  396:
+    12390:  397:    return 1;
+        -:  398:}
+        -:  399:
+function prepare called 15014 returned 100% blocks executed 100%
+    15014:  400:void prepare(struct simplex_t* s, int k) {
+    15014:  401:    int m = s->m;
+    15014:  402:    int n = s->n;
+        -:  403:    int i;
+        -:  404:
+        -:  405:    // make room for x_{m + n} at s.var[n] by moving s.var[n..n+m-1] one
+        -:  406:    // step to the right.
+   505688:  407:    for (i = m + n; i > n; i--) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   490674:  408:        s->var[i] = s->var[i - 1];
+        -:  409:    }
+        -:  410:
+    15014:  411:    s->var[n] = m + n;
+        -:  412:    // add x_{m + n} to each constraint
+        -:  413:
+    15014:  414:    n = n + 1;
+   505688:  415:    for (i = 0; i < m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   490674:  416:        s->a[i][n - 1] = -1;
+        -:  417:    }
+        -:  418:
+    15014:  419:    s->x = (double*)calloc(m + n, sizeof(double));
+    15014:  420:    s->c = (double*)calloc(n, sizeof(double));
+    15014:  421:    s->c[n - 1] = -1;
+    15014:  422:    s->n = n;
+    15014:  423:    pivot(s, k, n - 1);
+call    0 returned 100%
+    15014:  424:}
+        -:  425:
+function select_nonbasic called 990401 returned 100% blocks executed 100%
+   990401:  426:int select_nonbasic(struct simplex_t* s) {
+        -:  427:    int i;
+  7331547:  428:    for (i = 0; i < s->n; i++) {
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+  7304090:  429:        if (s->c[i] > epsilon) {
+branch  0 taken 13% (fallthrough)
+branch  1 taken 87%
+   962944:  430:            return i;
+        -:  431:        }
+        -:  432:    }
+    27457:  433:    return -1;
+        -:  434:}
+        -:  435:
+function init called 30081 returned 100% blocks executed 100%
+    30081:  436:int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) {
+        -:  437:    int i, k;
+        -:  438:
+    30081:  439:    s->m = m;
+    30081:  440:    s->n = n;
+    30081:  441:    s->a = a;
+    30081:  442:    s->b = b;
+    30081:  443:    s->c = c;
+    30081:  444:    s->x = x;
+    30081:  445:    s->y = y;
+    30081:  446:    s->var = var;
+        -:  447:
+    30081:  448:    if (s->var == NULL) {
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+    15067:  449:        s->var = (int*)calloc(m + n + 1, sizeof(int));
+   808613:  450:        for (i = 0; i < m + n; i++) {
+branch  0 taken 98%
+branch  1 taken 2% (fallthrough)
+   793546:  451:            s->var[i] = i;
+        -:  452:        }
+        -:  453:    }
+        -:  454:
+   982880:  455:    for (k = 0, i = 1; i < m; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   952799:  456:        if (b[i] < b[k]) {
+branch  0 taken 15% (fallthrough)
+branch  1 taken 85%
+   141318:  457:            k = i;
+        -:  458:        }
+        -:  459:    }
+        -:  460:
+    30081:  461:    return k;
+        -:  462:}
+        -:  463:
+function initial_node called 1 returned 100% blocks executed 100%
+        1:  464:struct node_t* initial_node(int m, int n, double** a, double* b, double* c) {
+        -:  465:    int i;
+        -:  466:
+        1:  467:    struct node_t* p = (struct node_t*)calloc(1, sizeof(struct node_t));
+        1:  468:    p->a = (double**)calloc(m + 1, sizeof(double*));
+       22:  469:    for (i = 0; i < m + 1; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       21:  470:        p->a[i] = (double*)calloc(n + 1, sizeof(double));
+        -:  471:    }
+        1:  472:    p->b = (double*)calloc(m + 1, sizeof(double));
+        1:  473:    p->c = (double*)calloc(n + 1, sizeof(double));
+        1:  474:    p->x = (double*)calloc(n + 1, sizeof(double));
+        1:  475:    p->min = (double*)calloc(n, sizeof(double));
+        1:  476:    p->max = (double*)calloc(n, sizeof(double));
+        1:  477:    p->m = m;
+        1:  478:    p->n = n;
+        -:  479:
+       21:  480:    for (i = 0; i < m; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       20:  481:        memcpy(p->a[i], a[i], n * sizeof(double));
+        -:  482:    }
+        1:  483:    memcpy(p->b, b, m * sizeof(double));
+        1:  484:    memcpy(p->c, c, n * sizeof(double));
+        -:  485:
+       21:  486:    for (i = 0; i < n; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+       20:  487:        p->min[i] = -INFINITY;
+       20:  488:        p->max[i] = +INFINITY;
+        -:  489:    }
+        -:  490:
+        1:  491:    return p;
+        -:  492:}
+        -:  493:
+function extend called 15066 returned 100% blocks executed 100%
+    15066:  494:struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk) {
+    15066:  495:    struct node_t* q = (struct node_t*)calloc(1, sizeof(struct node_t));
+        -:  496:    int i, j;
+        -:  497:
+    15066:  498:    q->k = k;
+    15066:  499:    q->ak = ak;
+    15066:  500:    q->bk = bk;
+        -:  501:
+    15066:  502:    if (ak > 0 && p->max[k] < INFINITY) {
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+branch  2 taken 40% (fallthrough)
+branch  3 taken 60%
+     3018:  503:        q->m = p->m;
+    12048:  504:    } else if (ak < 0 && p->min[k] > 0) {
+branch  0 taken 63% (fallthrough)
+branch  1 taken 37%
+branch  2 taken 20% (fallthrough)
+branch  3 taken 80%
+     1472:  505:        q->m = p->m;
+        -:  506:    } else {
+    10576:  507:        q->m = p->m + 1;
+        -:  508:    }
+        -:  509:
+    15066:  510:    q->n = p->n;
+    15066:  511:    q->h = -1;
+        -:  512:
+    15066:  513:    q->a = (double**)calloc(q->m + 1, sizeof(double*));
+   522318:  514:    for (i = 0; i < q->m + 1; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   507252:  515:        q->a[i] = (double*)calloc(q->n + 1, sizeof(double));
+        -:  516:    }
+    15066:  517:    q->b = (double*)calloc(q->m + 1, sizeof(double));
+    15066:  518:    q->c = (double*)calloc(q->n + 1, sizeof(double));
+    15066:  519:    q->x = (double*)calloc(q->n + 1, sizeof(double));
+    15066:  520:    q->min = (double*)calloc(n, sizeof(double));
+    15066:  521:    q->max = (double*)calloc(n, sizeof(double));
+        -:  522:
+    15066:  523:    memcpy(q->min, p->min, n * sizeof(double));
+    15066:  524:    memcpy(q->max, p->max, n * sizeof(double));
+   316386:  525:    for (i = 0; i < m; i++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+   301320:  526:        memcpy(q->a[i], a[i], n * sizeof(double));
+        -:  527:    }
+    15066:  528:    memcpy(q->b, b, m * sizeof(double));
+    15066:  529:    memcpy(q->c, c, n * sizeof(double));
+        -:  530:
+    15066:  531:    if (ak > 0) {
+branch  0 taken 50% (fallthrough)
+branch  1 taken 50%
+     7533:  532:        if (q->max[k] == INFINITY || bk < q->max[k]) {
+branch  0 taken 40% (fallthrough)
+branch  1 taken 60%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+     7533:  533:            q->max[k] = bk;
+        -:  534:        }
+     7533:  535:    } else if (q->min[k] == -INFINITY || -bk > q->min[k]) {
+branch  0 taken 20% (fallthrough)
+branch  1 taken 80%
+branch  2 taken 100% (fallthrough)
+branch  3 taken 0%
+     7533:  536:        q->min[k] = -bk;
+        -:  537:    }
+        -:  538:
+   316386:  539:    for (i = m, j = 0; j < n; j++) {
+branch  0 taken 95%
+branch  1 taken 5% (fallthrough)
+   301320:  540:        if (q->min[j] > -INFINITY) {
+branch  0 taken 24% (fallthrough)
+branch  1 taken 76%
+    72459:  541:            q->a[i][j] = -1;
+    72459:  542:            q->b[i] = -q->min[j];
+    72459:  543:            i++;
+        -:  544:        }
+   301320:  545:        if (q->max[j] < INFINITY) {
+branch  0 taken 39% (fallthrough)
+branch  1 taken 61%
+   118407:  546:            q->a[i][j] = 1;
+   118407:  547:            q->b[i] = q->max[j];
+   118407:  548:            i++;
+        -:  549:        }
+        -:  550:    }
+    15066:  551:    return q;
+        -:  552:}
+        -:  553:
+function is_integer called 180916 returned 100% blocks executed 100%
+   180916:  554:int is_integer(double* xp) {
+   180916:  555:    double x = *xp;
+   180916:  556:    double r = lround(x);
+        -:  557:
+   180916:  558:    if (fabs(r - x) < epsilon) {
+branch  0 taken 88% (fallthrough)
+branch  1 taken 12%
+   159405:  559:        *xp = r;
+   159405:  560:        return 1;
+        -:  561:    } else {
+    21511:  562:        return 0;
+        -:  563:    }
+        -:  564:}
+        -:  565:
+function integer called 12443 returned 100% blocks executed 100%
+    12443:  566:int integer(struct node_t* p) {
+        -:  567:    int i;
+        -:  568:
+   103034:  569:    for (i = 0; i < p->n; i++) {
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+   103013:  570:        if (!is_integer(&(p->x[i]))) {
+call    0 returned 100%
+branch  1 taken 12% (fallthrough)
+branch  2 taken 88%
+    12422:  571:              return 0;
+        -:  572:        }
+        -:  573:    }
+       21:  574:    return 1;
+        -:  575:}
+        -:  576:
+function bound called 21 returned 100% blocks executed 100%
+       21:  577:void bound(struct node_t* p, struct set_t* h, double* zp, double* x) {
+       21:  578:    if (p->z > *zp) {
+branch  0 taken 71% (fallthrough)
+branch  1 taken 29%
+       15:  579:        *zp = p->z;
+       15:  580:        memcpy(x, p->x, (p->n + 1) * sizeof(double));
+        -:  581:
+    15135:  582:        for (int i = 0; i < h->alloc; i++) {
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+    15120:  583:            if (!h->nodes[i] || h->nodes[i]->z >= p->z) {
+branch  0 taken 57% (fallthrough)
+branch  1 taken 43%
+branch  2 taken 82% (fallthrough)
+branch  3 taken 18%
+    13564:  584:                continue;
+        -:  585:            }
+        -:  586:
+     1556:  587:            free_node(h->nodes[i]);
+call    0 returned 100%
+     1556:  588:            h->nodes[i] = NULL;
+     1556:  589:            h->count--;
+        -:  590:        }
+        -:  591:    }
+       21:  592:}
+        -:  593:
+function branch called 12422 returned 100% blocks executed 88%
+    12422:  594:int branch(struct node_t* q, double z) {
+        -:  595:    double min, max;
+        -:  596:    int h;
+        -:  597:
+    12422:  598:    if (q->z < z) {
+branch  0 taken 27% (fallthrough)
+branch  1 taken 73%
+     3333:  599:        return 0;
+        -:  600:    }
+        -:  601:
+    77903:  602:    for (h = 0; h < q->n; h++) {
+branch  0 taken 100%
+branch  1 taken 0% (fallthrough)
+    77903:  603:        if (!is_integer(&(q->x[h]))) {
+call    0 returned 100%
+branch  1 taken 12% (fallthrough)
+branch  2 taken 88%
+     9089:  604:            if (q->min[h] == -INFINITY) {
+branch  0 taken 82% (fallthrough)
+branch  1 taken 18%
+     7475:  605:                min = 0;
+        -:  606:            } else {
+     1614:  607:                min = q->min[h];
+        -:  608:            }
+        -:  609:
+     9089:  610:            max = q->max[h];
+        -:  611:
+     9089:  612:            if (floor(q->x[h]) < min || ceil(q->x[h]) > max) {
+branch  0 taken 100% (fallthrough)
+branch  1 taken 0%
+branch  2 taken 0% (fallthrough)
+branch  3 taken 100%
+    #####:  613:                continue;
+        -:  614:            }
+        -:  615:
+     9089:  616:            q->h = h;
+     9089:  617:            q->xh = q->x[h];
+        -:  618:
+        -:  619:            // for (int i = 0; i < q->m + 1; i++) {
+        -:  620:            //     free(q->a[i]);
+        -:  621:            // }
+        -:  622:            // free(q->a);
+        -:  623:            // free(q->b);
+        -:  624:            // free(q->c);
+        -:  625:            // free(q->x);
+        -:  626:
+     9089:  627:            return 1;
+        -:  628:        }
+        -:  629:    }
+        -:  630:
+    #####:  631:    return 0;
+        -:  632:}
+        -:  633:
+function succ called 15066 returned 100% blocks executed 93%
+    15066:  634:void succ(struct node_t* p, struct set_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) {
+    15066:  635:    struct node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
+call    0 returned 100%
+        -:  636:
+    15066:  637:    if (q == NULL) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  638:        return;
+        -:  639:    }
+        -:  640:
+    15066:  641:    q->z = simplex(q->m, q->n, q->a, q->b, q->c, q->x, 0);
+call    0 returned 100%
+        -:  642:
+    15066:  643:    if (isfinite(q->z)) {
+branch  0 taken 83% (fallthrough)
+branch  1 taken 17%
+    12442:  644:        if (integer(q)) {
+call    0 returned 100%
+branch  1 taken 1% (fallthrough)
+branch  2 taken 99%
+       21:  645:            bound(q, h, zp, x);
+call    0 returned 100%
+    12421:  646:        } else if (branch(q, *zp)) {
+call    0 returned 100%
+branch  1 taken 73% (fallthrough)
+branch  2 taken 27%
+     9088:  647:            add(h, q);
+call    0 returned 100%
+     9088:  648:            return;
+        -:  649:        }
+        -:  650:    }
+        -:  651:
+     5978:  652:    free_node(q);
+call    0 returned 100%
+        -:  653:}
+        -:  654:
+function intopt called 1 returned 100% blocks executed 74%
+        1:  655:double intopt(int m, int n, double** a, double* b, double* c, double* x) {
+        1:  656:    struct node_t* p = initial_node(m, n, a, b, c);
+call    0 returned 100%
+        1:  657:    struct set_t* h = create_set();
+call    0 returned 100%
+        1:  658:    add(h, p);
+call    0 returned 100%
+        -:  659:
+        1:  660:    double z = -INFINITY;
+        1:  661:    p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0);
+call    0 returned 100%
+        -:  662:
+        1:  663:    if (integer(p) || !isfinite(p->z)) {
+call    0 returned 100%
+branch  1 taken 100% (fallthrough)
+branch  2 taken 0%
+branch  3 taken 0% (fallthrough)
+branch  4 taken 100%
+    #####:  664:        z = p->z;
+    #####:  665:        if (integer(p)) {
+call    0 never executed
+branch  1 never executed
+branch  2 never executed
+    #####:  666:            memcpy(x, p->x, (p->n + 1) * sizeof(double));
+        -:  667:        }
+    #####:  668:        free_node(p);
+call    0 never executed
+    #####:  669:        free_set(h);
+call    0 never executed
+    #####:  670:        return z;
+        -:  671:    }
+        -:  672:
+        1:  673:    branch(p, z);
+call    0 returned 100%
+        -:  674:
+     7535:  675:    while (size(h) > 0) {
+call    0 returned 100%
+branch  1 taken 99%
+branch  2 taken 1% (fallthrough)
+     7533:  676:        struct node_t* p = pop(h);
+call    0 returned 100%
+     7533:  677:        succ(p, h, m, n, a, b, c, p->h, 1, floor(p->xh), &z, x);
+call    0 returned 100%
+     7533:  678:        succ(p, h, m, n, a, b, c, p->h, -1, -ceil(p->xh), &z, x);
+call    0 returned 100%
+     7533:  679:        free_node(p);
+call    0 returned 100%
+        -:  680:    }
+        -:  681:
+        1:  682:    free_set(h);
+call    0 returned 100%
+        -:  683:
+        1:  684:    if (z == -INFINITY) {
+branch  0 taken 0% (fallthrough)
+branch  1 taken 100%
+    #####:  685:        return NAN;
+        -:  686:    } else {
+        1:  687:        return z;
+        -:  688:    }
+        -:  689:}
+        -:  690:
+function free_node called 15067 returned 100% blocks executed 100%
+    15067:  691:void free_node(struct node_t* p) {
+   522340:  692:    for (int i = 0; i < p->m + 1; i++) {
+branch  0 taken 97%
+branch  1 taken 3% (fallthrough)
+   507273:  693:        free(p->a[i]);
+        -:  694:    }
+    15067:  695:    free(p->a);
+    15067:  696:    free(p->b);
+    15067:  697:    free(p->c);
+    15067:  698:    free(p->x);
+    15067:  699:    free(p->min);
+    15067:  700:    free(p->max);
+    15067:  701:    free(p);
+    15067:  702:}
+        -:  703:
+function create_set called 1 returned 100% blocks executed 100%
+        1:  704:struct set_t* create_set() {
+        1:  705:    struct set_t* h = (struct set_t*)calloc(1, sizeof(struct set_t));
+        1:  706:    h->alloc = 10;
+        1:  707:    h->count = 0;
+        1:  708:    h->nodes = (struct node_t**)calloc(h->alloc, sizeof(struct node_t*));
+        -:  709:
+       11:  710:    for (int i = 0; i < h->alloc; i++) {
+branch  0 taken 91%
+branch  1 taken 9% (fallthrough)
+       10:  711:        h->nodes[i] = NULL;
+        -:  712:    }
+        -:  713:
+        1:  714:    return h;
+        -:  715:}
+        -:  716:
+function add called 9089 returned 100% blocks executed 100%
+     9089:  717:void add(struct set_t* h, struct node_t* p) {
+        -:  718:    int i;
+        -:  719:
+     9089:  720:    if (h->count < h->alloc) {
+branch  0 taken 99% (fallthrough)
+branch  1 taken 1%
+   724208:  721:        for (i = 0; i < h->alloc; i++) {
+branch  0 taken 100%
+branch  1 taken 0%
+   724208:  722:            if ((h->nodes)[i] == NULL) {
+branch  0 taken 1% (fallthrough)
+branch  1 taken 99%
+     9082:  723:                h->nodes[i] = p;
+     9082:  724:                h->count++;
+     9082:  725:                return;
+        -:  726:            }
+        -:  727:        }
+        -:  728:    } else {
+        7:  729:        h->alloc = h->alloc * 2;
+        7:  730:        h->nodes = (struct node_t**)realloc(h->nodes, h->alloc * sizeof(struct node_t*));
+     1277:  731:        for (i = h->count; i < h->alloc; i++) {
+branch  0 taken 99%
+branch  1 taken 1% (fallthrough)
+     1270:  732:            h->nodes[i] = NULL;
+        -:  733:        }
+        7:  734:        h->nodes[h->count] = p;
+        7:  735:        h->count++;
+        -:  736:    }
+        -:  737:}
+        -:  738:
+function size called 7534 returned 100% blocks executed 100%
+     7534:  739:int size(struct set_t* h) {
+     7534:  740:    return h->count;
+        -:  741:}
+        -:  742:
+function pop called 7533 returned 100% blocks executed 100%
+     7533:  743:struct node_t* pop(struct set_t* h) {
+        -:  744:    struct node_t* p;
+    23452:  745:    for (int i = 0; i < h->alloc; i++) {
+branch  0 taken 100%
+branch  1 taken 0% (fallthrough)
+    23452:  746:        if ((h->nodes)[i]) {
+branch  0 taken 32% (fallthrough)
+branch  1 taken 68%
+     7533:  747:            p = h->nodes[i];
+     7533:  748:            h->nodes[i] = NULL;
+     7533:  749:            h->count--;
+     7533:  750:            break;
+        -:  751:        }
+        -:  752:    }
+        -:  753:
+     7533:  754:    return p;
+        -:  755:}
+        -:  756:
+        -:  757:
+function free_set called 1 returned 100% blocks executed 100%
+        1:  758:void free_set(struct set_t* h) {
+        1:  759:    free(h->nodes);
+        1:  760:    free(h);
+        1:  761:}

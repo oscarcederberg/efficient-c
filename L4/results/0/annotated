@@ -1,0 +1,878 @@
+/* 
+ * Command line: opannotate -s 
+ * 
+ * Interpretation of command line:
+ * Output annotated source file with samples
+ * Output all files
+ * 
+ * CPU: ppc64 POWER8, speed 3491 MHz (estimated)
+ * Counted CYCLES events (Cycles) with a unit mask of 0x00 (No unit mask) count 100000
+ */
+/* 
+ * Total samples for file : "/home/os7138ce-s/efficient-c/L4/intopt.c"
+ * 
+ * 406842 99.5184
+ */
+
+
+               :#include <stdio.h>
+               :#include <stdlib.h>
+               :#include <string.h>
+               :#include <math.h>
+               :
+               :double epsilon = 10e-6;
+               :
+               :struct simplex_t {
+               :    int         m;
+               :    int         n;
+               :    int*        var;
+               :    double**    a;
+               :    double*     b;
+               :    double*     x;
+               :    double*     c;
+               :    double      y;
+               :};
+               :
+               :struct node_t {
+               :    int         m;
+               :    int         n;
+               :    int         k;
+               :    int         h;
+               :    double      xh;
+               :    double      ak;
+               :    double      bk;
+               :    double*     min;
+               :    double*     max;
+               :    double**    a;
+               :    double*     b;
+               :    double*     x;
+               :    double*     c;
+               :    double      z;
+               :};
+               :
+               :struct set_t {
+               :    int             count;
+               :    int             alloc;
+               :    struct node_t** nodes;
+               :};
+               :
+               :double simplex(int m, int n, double** a, double* b, double* c, double* x, double y);
+               :double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h);
+               :void pivot(struct simplex_t* s, int row, int col);
+               :int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var);
+               :void prepare(struct simplex_t* s, int k);
+               :int select_nonbasic(struct simplex_t* s);
+               :int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var);
+               :
+               :struct node_t* initial_node(int m, int n, double** a, double* b, double* c);
+               :struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk);
+               :int is_integer(double* xp);
+               :int integer(struct node_t* p);
+               :void bound(struct node_t* p, struct set_t* h, double* zp, double* x);
+               :int branch(struct node_t* q, double z);
+               :void succ(struct node_t* p, struct set_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x);
+               :double intopt(int m, int n, double** a, double* b, double* c, double* x);
+               :
+               :void free_node(struct node_t* p);
+               :
+               :struct set_t* create_set();
+               :void add(struct set_t* h, struct node_t* p);
+               :int size(struct set_t* h);
+               :struct node_t* pop(struct set_t* h);
+               :void free_set(struct set_t* h);
+               :
+               :void print_simplex(struct simplex_t* s) {
+               :    printf("%14s = %10d\n%14s = %10d\n", "m", s->m, "n", s->n);
+               :    printf("%14s = ", "max z");
+               :    for (size_t i = 0; i < s->n; i++)
+               :    {
+               :        printf("%10.3lf*x_%ld", s->c[i], i);
+               :        if(i != s->n - 1){
+               :            printf(" + ");
+               :        }
+               :    }
+               :    printf("\n");
+               :    for (size_t i = 0; i < s->m; i++)
+               :    {
+               :        for (size_t j = 0; j < s->n; j++)
+               :        {
+               :            printf("%10.3lf*x_%ld", s->a[i][j], j);
+               :            if(j != s->n - 1){
+               :                printf(" + ");
+               :            } else {
+               :                printf(" \u2264 %10.3lf", s->b[i]);
+               :            }
+               :        }
+               :        printf("\n");
+               :    }
+               :    printf("--------------------------\n");
+               :}
+               :
+               :void print_node(struct node_t* p) {
+               :    printf("%14s = %10d\n%14s = %10d\n", "m", p->m, "n", p->n);
+               :    printf("%14s = %10d\n%14s = %10d\n", "h", p->h, "k", p->k);
+               :    printf("%14s = %10.3lf\n%14s = %10.3lf\n%14s = %10.3lf\n", "xh", p->xh, "ak", p->ak, "bk", p->bk);
+               :    printf("%14s = ", "max z");
+               :    for (size_t i = 0; i < p->n + 1; i++)
+               :    {
+               :        printf("%10.3lf*x_%ld", p->c[i], i);
+               :        if(i != p->n){
+               :            printf(" + ");
+               :        }
+               :    }
+               :    printf("\n");
+               :    for (size_t i = 0; i < p->m + 1; i++)
+               :    {
+               :        for (size_t j = 0; j < p->n + 1; j++)
+               :        {
+               :            printf("%10.3lf*x_%ld", p->a[i][j], j);
+               :            if(j != p->n){
+               :                printf(" + ");
+               :            } else {
+               :                printf(" \u2264 %10.3lf", p->b[i]);
+               :            }
+               :        }
+               :        printf("\n");
+               :    }
+               :    printf("%14s = ", "min");
+               :    for (size_t i = 0; i < p->n + 1; i++)
+               :    {
+               :        printf("%10.3lf", p->min[i]);
+               :        if(i != p->n){
+               :            printf(", ");
+               :        }
+               :    }
+               :    printf("\n");
+               :    printf("%14s = ", "max");
+               :    for (size_t i = 0; i < p->n + 1; i++)
+               :    {
+               :        printf("%10.3lf", p->max[i]);
+               :        if(i != p->n){
+               :            printf(", ");
+               :        }
+               :    }
+               :    printf("\n");
+               :    printf("%14s = %10.3lf\n", "z", p->z);
+               :    printf("--------------------------\n");
+               :}
+               :
+               :int main() {
+               :    int m;
+               :    int n;
+               :    double** a;
+               :    double* b;
+               :    double* c;
+               :    double* x;
+               :    size_t i;
+               :
+               :    //
+               :    // Scan input
+               :    //
+               :    scanf("%d", &m);
+               :    scanf("%d", &n);
+               :
+               :    a = (double**)calloc(m + n, sizeof(double*));
+               :    b = (double*)calloc(m + n, sizeof(double));
+               :    c = (double*)calloc(n + 1, sizeof(double));
+               :    x = (double*)calloc(n + m + 1, sizeof(double));
+               :
+               :    for (i = 0; i < n; i++) {
+               :        scanf("%lf", &c[i]);
+               :    }
+               :    for (i = 0; i < m; i++) {
+               :        a[i] = (double*)calloc(n + 1, sizeof(double));
+               :        for (size_t j = 0; j < n; j++) {
+               :            scanf("%lf",&a[i][j]);
+               :        }
+               :    }
+               :    for (i = 0; i < m; i++) {
+               :        scanf("%lf", &b[i]);
+               :    }
+               :
+               :    double z = intopt(m, n, a, b, c, x);
+               :    printf("result: %lf\n", z);
+               :
+               :    free(b);
+               :    for (i = 0; i < m; i++) {
+               :        free(a[i]);
+               :    }
+               :    free(a);
+               :    free(c);
+               :    free(x);
+               :}
+               :
+     5  0.0012 :double simplex(int m, int n, double** a, double* b, double* c, double* x, double y) { /* simplex total:     14  0.0034 */
+     9  0.0022 :    return xsimplex(m, n, a, b, c, x, y, NULL, 0);
+               :}
+               :
+     3 7.3e-04 :double xsimplex(int m, int n, double** a, double* b, double* c, double* x, double y, int* var, int h) { /* xsimplex total:  20491  5.0123 */
+     2 4.9e-04 :    struct simplex_t*   s = (struct simplex_t*)calloc(1, sizeof(struct simplex_t));
+               :    int                 i, row, col;
+               :
+     3 7.3e-04 :    if (!initial(s, m, n, a, b, c, x, y, var)) {
+               :        free(s->var);
+               :        free(s);
+               :        return NAN; //not a number.
+               :    }
+               :
+   291  0.0712 :    while ((col = select_nonbasic(s)) >= 0) {
+    12  0.0029 :        row = -1;
+  3181  0.7781 :        for (i = 0; i < m; i++) {
+  6095  1.4909 :            if (a[i][col] > epsilon &&
+  8906  2.1785 :            (row < 0 || b[i] / a[i][col] < b[row] / a[row][col])) {
+  1285  0.3143 :                row = i;
+               :            }
+               :        }
+               :
+    81  0.0198 :        if (row < 0) {
+               :            free(s->var);
+               :            free(s);
+               :            return INFINITY; //unbounded.
+               :        }
+               :
+    41  0.0100 :        pivot(s, row, col);
+               :        //print_simplex(s);
+               :    }
+               :
+               :    if (h == 0) {
+    42  0.0103 :        for (i = 0; i < n; i++) {
+    45  0.0110 :            if (s->var[i] < n) {
+    27  0.0066 :                x[s->var[i]] = 0;
+               :            }
+               :        }
+    65  0.0159 :        for (i = 0; i < m; i++) {
+    87  0.0213 :            if (s->var[n + i] < n) {
+    50  0.0122 :                x[s->var[n + i]] = s->b[i];
+               :            }
+               :        }
+     2 4.9e-04 :        free(s->var);
+               :    } else {
+    33  0.0081 :        for (i = 0; i < n; i++) {
+    87  0.0213 :            x[i] = 0;
+               :        }
+    38  0.0093 :        for (i = n; i < n + m; i++) {
+   110  0.0269 :            x[i] = s->b[i - n];
+               :        }
+               :    }
+               :
+     4 9.8e-04 :    double result = s->y;
+     1 2.4e-04 :    free(s);
+               :    return result;
+               :}
+               :
+   293  0.0717 :void pivot(struct simplex_t* s, int row, int col) { /* pivot total: 378933 92.6915 */
+               :    double** a = s->a;
+    33  0.0081 :    double* b = s->b;
+     2 4.9e-04 :    double* c = s->c;
+    11  0.0027 :    int m = s->m;
+               :    int n = s->n;
+               :    int i, j, t;
+               :
+    95  0.0232 :    t = s->var[col];
+   187  0.0457 :    s->var[col] = s->var[n + row];
+    59  0.0144 :    s->var[n + row] = t;
+   397  0.0971 :    s->y = s->y + c[col] * b[row] / a[row][col];
+               :
+   695  0.1700 :    for (i = 0; i < n; i++) {
+   211  0.0516 :        if (i != col) {
+  7777  1.9023 :            c[i] = c[i] - c[col] * a[row][i] / a[row][col];
+               :        }
+               :    }
+   533  0.1304 :    c[col] = -c[col] / a[row][col];
+               :
+   560  0.1370 :    for (i = 0; i < m; i++) {
+   364  0.0890 :        if (i != row) {
+ 12993  3.1782 :            b[i] = b[i] - a[i][col] * b[row] / a[row][col];
+               :        }
+               :    }
+               :
+  8529  2.0863 :    for (i = 0; i < m; i++) {
+   479  0.1172 :        if (i != row) {
+ 20723  5.0691 :            for (j = 0; j < n; j++) {
+  6701  1.6391 :                if (j != col) {
+298613 73.0443 :                    a[i][j] = a[i][j] - a[i][col] * a[row][j] / a[row][col];
+               :                }
+               :            }
+               :        }
+               :    }
+               :
+   948  0.2319 :    for (i = 0; i < m; i++) {
+   361  0.0883 :        if (i != row) {
+ 10651  2.6054 :            a[i][col] = -a[i][col] / a[row][col];
+               :        }
+               :    }
+               :
+   937  0.2292 :    for (i = 0; i < n; i++) {
+   252  0.0616 :        if (i != col) {
+  5758  1.4085 :            a[row][i] = a[row][i] / a[row][col];
+               :        }
+               :    }
+               :
+   569  0.1392 :    b[row] = b[row] / a[row][col];
+   192  0.0470 :    a[row][col] = 1 / a[row][col];
+    10  0.0024 :}
+               :
+     7  0.0017 :int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) { /* initial total:   3367  0.8236 */
+               :    int             i, j, k;
+               :    double          w;
+               :
+    10  0.0024 :    k = init(s, m, n, a, b, c, x, y, var);
+               :
+     4 9.8e-04 :    if (b[k] >= 0) {
+     1 2.4e-04 :      return 1; //feasible.
+               :    }
+               :
+     3 7.3e-04 :    prepare(s, k);
+     1 2.4e-04 :    n = s->n;
+     1 2.4e-04 :    s->y = xsimplex(m, n, s->a, s->b, s->c, s->x, 0, s->var, 1);
+               :
+    59  0.0144 :    for (i = 0; i < m + n; i++) {
+    96  0.0235 :        if (s->var[i] == m + n - 1) {
+     9  0.0022 :            if (fabs(s->x[i]) > epsilon) {
+     2 4.9e-04 :                free(s->x);
+               :                free(s->c);
+               :                return 0; //infeasible.
+               :            } else {
+               :                break;
+               :            }
+               :        }
+               :    }
+               :
+               :    if (i >= n) {
+               :        // x_{n+m} is basic. find good nonbasic.
+    10  0.0024 :        for (j = k = 0; k < n; k++) {
+               :            //printf("|%lf| > |%lf|\n", s->a[i - n][k], s->a[i - n][j]);
+    46  0.0113 :            if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
+     7  0.0017 :                j = k;
+               :            }
+               :        }
+               :        pivot(s, i - n, j);
+               :        i = j;
+               :    }
+               :
+               :    if (i < n - 1) {
+               :        //x_{n+m} is nonbasic and not last. swap columns i and n-1.
+               :        k = s->var[i];
+     1 2.4e-04 :        s->var[i] = s->var[n - 1];
+               :        s->var[n - 1] = k;
+    14  0.0034 :        for (k = 0; k < m; k++) {
+    60  0.0147 :            w = s->a[k][n - 1];
+    28  0.0068 :            s->a[k][n - 1] = s->a[k][i];
+    55  0.0135 :            s->a[k][i] = w;
+               :        }
+               :    } else {
+               :        //x_{n+m} is nonbasic and last. forget it.
+               :    }
+               :
+               :    free(s->c);
+               :    s->c = c;
+     1 2.4e-04 :    s->y = y;
+               :
+    20  0.0049 :    for (k = n - 1; k < n + m - 1; k++) {
+    91  0.0223 :        s->var[k] = s->var[k + 1];
+               :    }
+               :
+     9  0.0022 :    n = s->n = s->n - 1;
+     4 9.8e-04 :    double* t = (double*)calloc(n, sizeof(double));
+               :
+               :    int next_k;
+    44  0.0108 :    for (k = 0; k < n; k++) {
+     2 4.9e-04 :        next_k = 0;
+   511  0.1250 :        for (j = 0; j < n; j++) {
+   674  0.1649 :           if (k == s->var[j]) {
+               :               //x_k is nonbasic. add c_k.
+    63  0.0154 :               t[j] = t[j] + s->c[k];
+     4 9.8e-04 :               next_k = 1;
+               :               break;
+               :           }
+               :        }
+               :
+    28  0.0068 :        if (next_k)
+    21  0.0051 :            continue;
+               :
+   220  0.0538 :        for (j = 0; j < m; j++) {
+   413  0.1010 :           if (s->var[n + j] == k) {
+               :               //x_k is at row j.
+    25  0.0061 :               break;
+               :           }
+               :        }
+               :
+    36  0.0088 :        s->y = s->y + s->c[k] * s->b[j];
+               :
+    74  0.0181 :        for (i = 0; i < n; i++) {
+   631  0.1544 :            t[i] = t[i] - s->c[k] * s->a[j][i];
+               :        }
+               :    }
+               :
+    30  0.0073 :    for (i = 0; i < n; i++) {
+    47  0.0115 :        s->c[i] = t[i];
+               :    }
+               :
+     3 7.3e-04 :    free(t);
+               :    free(s->x);
+               :
+     1 2.4e-04 :    return 1;
+     1 2.4e-04 :}
+               :
+     3 7.3e-04 :void prepare(struct simplex_t* s, int k) { /* prepare total:    297  0.0726 */
+     1 2.4e-04 :    int m = s->m;
+     5  0.0012 :    int n = s->n;
+               :    int i;
+               :
+               :    // make room for x_{m + n} at s.var[n] by moving s.var[n..n+m-1] one
+               :    // step to the right.
+    32  0.0078 :    for (i = m + n; i > n; i--) {
+   122  0.0298 :        s->var[i] = s->var[i - 1];
+               :    }
+               :
+     6  0.0015 :    s->var[n] = m + n;
+               :    // add x_{m + n} to each constraint
+               :
+               :    n = n + 1;
+    31  0.0076 :    for (i = 0; i < m; i++) {
+    82  0.0201 :        s->a[i][n - 1] = -1;
+               :    }
+               :
+     8  0.0020 :    s->x = (double*)calloc(m + n, sizeof(double));
+     2 4.9e-04 :    s->c = (double*)calloc(n, sizeof(double));
+     3 7.3e-04 :    s->c[n - 1] = -1;
+     2 4.9e-04 :    s->n = n;
+               :    pivot(s, k, n - 1);
+               :}
+               :
+    18  0.0044 :int select_nonbasic(struct simplex_t* s) { /* select_nonbasic total:   2136  0.5225 */
+               :    int i;
+   679  0.1661 :    for (i = 0; i < s->n; i++) {
+  1201  0.2938 :        if (s->c[i] > epsilon) {
+   172  0.0421 :            return i;
+               :        }
+               :    }
+    15  0.0037 :    return -1;
+    51  0.0125 :}
+               :
+     8  0.0020 :int init(struct simplex_t* s, int m, int n, double** a, double* b, double* c, double* x, double y, int* var) { /* init total:    583  0.1426 */
+               :    int i, k;
+               :
+     5  0.0012 :    s->m = m;
+               :    s->n = n;
+               :    s->a = a;
+     1 2.4e-04 :    s->b = b;
+               :    s->c = c;
+               :    s->x = x;
+     1 2.4e-04 :    s->y = y;
+     2 4.9e-04 :    s->var = var;
+               :
+     1 2.4e-04 :    if (s->var == NULL) {
+     2 4.9e-04 :        s->var = (int*)calloc(m + n + 1, sizeof(int));
+   104  0.0254 :        for (i = 0; i < m + n; i++) {
+   136  0.0333 :            s->var[i] = i;
+               :        }
+               :    }
+               :
+   104  0.0254 :    for (k = 0, i = 1; i < m; i++) {
+   171  0.0418 :        if (b[i] < b[k]) {
+    40  0.0098 :            k = i;
+               :        }
+               :    }
+               :
+     7  0.0017 :    return k;
+     1 2.4e-04 :}
+               :
+               :struct node_t* initial_node(int m, int n, double** a, double* b, double* c) {
+               :    int i;
+               :
+               :    struct node_t* p = (struct node_t*)calloc(1, sizeof(struct node_t));
+               :    p->a = (double**)calloc(m + 1, sizeof(double*));
+               :    for (i = 0; i < m + 1; i++) {
+               :        p->a[i] = (double*)calloc(n + 1, sizeof(double));
+               :    }
+               :    p->b = (double*)calloc(m + 1, sizeof(double));
+               :    p->c = (double*)calloc(n + 1, sizeof(double));
+               :    p->x = (double*)calloc(n + 1, sizeof(double));
+               :    p->min = (double*)calloc(n, sizeof(double));
+               :    p->max = (double*)calloc(n, sizeof(double));
+               :    p->m = m;
+               :    p->n = n;
+               :
+               :    for (i = 0; i < m; i++) {
+               :        memcpy(p->a[i], a[i], n * sizeof(double));
+               :    }
+               :    memcpy(p->b, b, m * sizeof(double));
+               :    memcpy(p->c, c, n * sizeof(double));
+               :
+               :    for (i = 0; i < n; i++) {
+               :        p->min[i] = -INFINITY;
+               :        p->max[i] = +INFINITY;
+               :    }
+               :
+               :    return p;
+               :}
+               :
+     1 2.4e-04 :struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, double* c, int k, double ak, double bk) { /* extend total:    464  0.1135 */
+     1 2.4e-04 :    struct node_t* q = (struct node_t*)calloc(1, sizeof(struct node_t));
+               :    int i, j;
+               :
+     2 4.9e-04 :    q->k = k;
+               :    q->ak = ak;
+               :    q->bk = bk;
+               :
+     3 7.3e-04 :    if (ak > 0 && p->max[k] < INFINITY) {
+               :        q->m = p->m;
+               :    } else if (ak < 0 && p->min[k] > 0) {
+               :        q->m = p->m;
+               :    } else {
+     1 2.4e-04 :        q->m = p->m + 1;
+               :    }
+               :
+               :    q->n = p->n;
+               :    q->h = -1;
+               :
+     8  0.0020 :    q->a = (double**)calloc(q->m + 1, sizeof(double*));
+   119  0.0291 :    for (i = 0; i < q->m + 1; i++) {
+    53  0.0130 :        q->a[i] = (double*)calloc(q->n + 1, sizeof(double));
+               :    }
+     5  0.0012 :    q->b = (double*)calloc(q->m + 1, sizeof(double));
+     3 7.3e-04 :    q->c = (double*)calloc(q->n + 1, sizeof(double));
+     3 7.3e-04 :    q->x = (double*)calloc(q->n + 1, sizeof(double));
+     3 7.3e-04 :    q->min = (double*)calloc(n, sizeof(double));
+     2 4.9e-04 :    q->max = (double*)calloc(n, sizeof(double));
+               :
+     5  0.0012 :    memcpy(q->min, p->min, n * sizeof(double));
+     2 4.9e-04 :    memcpy(q->max, p->max, n * sizeof(double));
+    21  0.0051 :    for (i = 0; i < m; i++) {
+    61  0.0149 :        memcpy(q->a[i], a[i], n * sizeof(double));
+               :    }
+     1 2.4e-04 :    memcpy(q->b, b, m * sizeof(double));
+     1 2.4e-04 :    memcpy(q->c, c, n * sizeof(double));
+               :
+               :    if (ak > 0) {
+     6  0.0015 :        if (q->max[k] == INFINITY || bk < q->max[k]) {
+     2 4.9e-04 :            q->max[k] = bk;
+               :        }
+     4 9.8e-04 :    } else if (q->min[k] == -INFINITY || -bk > q->min[k]) {
+               :        q->min[k] = -bk;
+               :    }
+               :
+    24  0.0059 :    for (i = m, j = 0; j < n; j++) {
+    73  0.0179 :        if (q->min[j] > -INFINITY) {
+     9  0.0022 :            q->a[i][j] = -1;
+     8  0.0020 :            q->b[i] = -q->min[j];
+     1 2.4e-04 :            i++;
+               :        }
+    19  0.0046 :        if (q->max[j] < INFINITY) {
+    12  0.0029 :            q->a[i][j] = 1;
+     5  0.0012 :            q->b[i] = q->max[j];
+     3 7.3e-04 :            i++;
+               :        }
+               :    }
+     2 4.9e-04 :    return q;
+     1 2.4e-04 :}
+               :
+     1 2.4e-04 :int is_integer(double* xp) { /* is_integer total:    120  0.0294 */
+    14  0.0034 :    double x = *xp;
+    37  0.0091 :    double r = lround(x);
+               :
+    55  0.0135 :    if (fabs(r - x) < epsilon) {
+               :        *xp = r;
+               :        return 1;
+               :    } else {
+     7  0.0017 :        return 0;
+               :    }
+     6  0.0015 :}
+               :
+     1 2.4e-04 :int integer(struct node_t* p) { /* integer total:     23  0.0056 */
+               :    int i;
+               :
+    10  0.0024 :    for (i = 0; i < p->n; i++) {
+     8  0.0020 :        if (!is_integer(&(p->x[i]))) {
+     2 4.9e-04 :              return 0;
+               :        }
+               :    }
+               :    return 1;
+     2 4.9e-04 :}
+               :
+               :void bound(struct node_t* p, struct set_t* h, double* zp, double* x) { /* bound total:      8  0.0020 */
+               :    if (p->z > *zp) {
+               :        *zp = p->z;
+               :        memcpy(x, p->x, (p->n + 1) * sizeof(double));
+               :
+               :        for (int i = 0; i < h->alloc; i++) {
+     8  0.0020 :            if (!h->nodes[i] || h->nodes[i]->z >= p->z) {
+               :                continue;
+               :            }
+               :
+               :            free_node(h->nodes[i]);
+               :            h->nodes[i] = NULL;
+               :            h->count--;
+               :        }
+               :    }
+               :}
+               :
+     4 9.8e-04 :int branch(struct node_t* q, double z) { /* branch total:     15  0.0037 */
+               :    double min, max;
+               :    int h;
+               :
+     2 4.9e-04 :    if (q->z < z) {
+               :        return 0;
+               :    }
+               :
+     1 2.4e-04 :    for (h = 0; h < q->n; h++) {
+     3 7.3e-04 :        if (!is_integer(&(q->x[h]))) {
+     1 2.4e-04 :            if (q->min[h] == -INFINITY) {
+               :                min = 0;
+               :            } else {
+     1 2.4e-04 :                min = q->min[h];
+               :            }
+               :
+               :            max = q->max[h];
+               :
+     3 7.3e-04 :            if (floor(q->x[h]) < min || ceil(q->x[h]) > max) {
+               :                continue;
+               :            }
+               :
+               :            q->h = h;
+               :            q->xh = q->x[h];
+               :
+               :            // for (int i = 0; i < q->m + 1; i++) {
+               :            //     free(q->a[i]);
+               :            // }
+               :            // free(q->a);
+               :            // free(q->b);
+               :            // free(q->c);
+               :            // free(q->x);
+               :
+               :            return 1;
+               :        }
+               :    }
+               :
+               :    return 0;
+               :}
+               :
+               :void succ(struct node_t* p, struct set_t* h, int m, int n, double** a, double* b, double* c, int k, double ak, double bk, double* zp, double* x) { /* succ total:     27  0.0066 */
+     6  0.0015 :    struct node_t* q = extend(p, m, n, a, b, c, k, ak, bk);
+               :
+               :    if (q == NULL) {
+               :        return;
+               :    }
+               :
+    10  0.0024 :    q->z = simplex(q->m, q->n, q->a, q->b, q->c, q->x, 0);
+               :
+     2 4.9e-04 :    if (isfinite(q->z)) {
+               :        if (integer(q)) {
+               :            bound(q, h, zp, x);
+     7  0.0017 :        } else if (branch(q, *zp)) {
+               :            add(h, q);
+               :            return;
+               :        }
+               :    }
+               :
+               :    free_node(q);
+     2 4.9e-04 :}
+               :
+               :double intopt(int m, int n, double** a, double* b, double* c, double* x) { /* intopt total:     19  0.0046 */
+               :    struct node_t* p = initial_node(m, n, a, b, c);
+               :    struct set_t* h = create_set();
+               :    add(h, p);
+               :
+               :    double z = -INFINITY;
+               :    p->z = simplex(p->m, p->n, p->a, p->b, p->c, p->x, 0);
+               :
+               :    if (integer(p) || !isfinite(p->z)) {
+               :        z = p->z;
+               :        if (integer(p)) {
+               :            memcpy(x, p->x, (p->n + 1) * sizeof(double));
+               :        }
+               :        free_node(p);
+               :        free_set(h);
+               :        return z;
+               :    }
+               :
+               :    branch(p, z);
+               :
+     2 4.9e-04 :    while (size(h) > 0) {
+     2 4.9e-04 :        struct node_t* p = pop(h);
+     6  0.0015 :        succ(p, h, m, n, a, b, c, p->h, 1, floor(p->xh), &z, x);
+     6  0.0015 :        succ(p, h, m, n, a, b, c, p->h, -1, -ceil(p->xh), &z, x);
+     3 7.3e-04 :        free_node(p);
+               :    }
+               :
+               :    free_set(h);
+               :
+               :    if (z == -INFINITY) {
+               :        return NAN;
+               :    } else {
+               :        return z;
+               :    }
+               :}
+               :
+     1 2.4e-04 :void free_node(struct node_t* p) { /* free_node total:    126  0.0308 */
+    56  0.0137 :    for (int i = 0; i < p->m + 1; i++) {
+    60  0.0147 :        free(p->a[i]);
+               :    }
+     7  0.0017 :    free(p->a);
+     1 2.4e-04 :    free(p->b);
+     1 2.4e-04 :    free(p->c);
+               :    free(p->x);
+               :    free(p->min);
+               :    free(p->max);
+               :    free(p);
+               :}
+               :
+               :struct set_t* create_set() {
+               :    struct set_t* h = (struct set_t*)calloc(1, sizeof(struct set_t));
+               :    h->alloc = 10;
+               :    h->count = 0;
+               :    h->nodes = (struct node_t**)calloc(h->alloc, sizeof(struct node_t*));
+               :
+               :    for (int i = 0; i < h->alloc; i++) {
+               :        h->nodes[i] = NULL;
+               :    }
+               :
+               :    return h;
+               :}
+               :
+     3 7.3e-04 :void add(struct set_t* h, struct node_t* p) { /* add total:    209  0.0511 */
+               :    int i;
+               :
+     2 4.9e-04 :    if (h->count < h->alloc) {
+   101  0.0247 :        for (i = 0; i < h->alloc; i++) {
+   100  0.0245 :            if ((h->nodes)[i] == NULL) {
+     1 2.4e-04 :                h->nodes[i] = p;
+     2 4.9e-04 :                h->count++;
+               :                return;
+               :            }
+               :        }
+               :    } else {
+               :        h->alloc = h->alloc * 2;
+               :        h->nodes = (struct node_t**)realloc(h->nodes, h->alloc * sizeof(struct node_t*));
+               :        for (i = h->count; i < h->alloc; i++) {
+               :            h->nodes[i] = NULL;
+               :        }
+               :        h->nodes[h->count] = p;
+               :        h->count++;
+               :    }
+               :}
+               :
+               :int size(struct set_t* h) { /* size total:      1 2.4e-04 */
+     1 2.4e-04 :    return h->count;
+               :}
+               :
+               :struct node_t* pop(struct set_t* h) { /* pop total:      9  0.0022 */
+               :    struct node_t* p;
+     1 2.4e-04 :    for (int i = 0; i < h->alloc; i++) {
+     6  0.0015 :        if ((h->nodes)[i]) {
+     1 2.4e-04 :            p = h->nodes[i];
+               :            h->nodes[i] = NULL;
+               :            h->count--;
+               :            break;
+               :        }
+               :    }
+               :
+     1 2.4e-04 :    return p;
+               :}
+               :
+               :
+               :void free_set(struct set_t* h) {
+               :    free(h->nodes);
+               :    free(h);
+               :}
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/malloc/malloc.c"
+ * 
+ *   1583  0.3872
+ */
+
+
+ /* systrim.isra.1.constprop.10 total:      1 2.4e-04 */
+ /* cfree@GLIBC_2.17 total:    531  0.1299 */
+ /* calloc total:    238  0.0582 */
+ /* _int_malloc total:    786  0.1923 */
+ /* malloc_consolidate total:     27  0.0066 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/string/../sysdeps/powerpc/powerpc64/power8/memset.S"
+ * 
+ *    199  0.0487
+ */
+
+
+ /* __memset_power8 total:    199  0.0487 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/string/../sysdeps/powerpc/powerpc64/power7/memcpy.S"
+ * 
+ *     91  0.0223
+ */
+
+
+ /* __memcpy_power7 total:     91  0.0223 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/math/../sysdeps/powerpc/powerpc64/power8/fpu/s_llround.S"
+ * 
+ *      9  0.0022
+ */
+
+
+ /* __llround_power8 total:      9  0.0022 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/stdio-common/vfscanf.c"
+ * 
+ *      3 7.3e-04
+ */
+
+
+ /* _IO_vfscanf@@GLIBC_2.17 total:      3 7.3e-04 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/stdlib/strtod_l.c"
+ * 
+ *      1 2.4e-04
+ */
+
+
+ /* ____strtod_l_internal total:      1 2.4e-04 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/stdio-common/isoc99_scanf.c"
+ * 
+ *      1 2.4e-04
+ */
+
+
+ /* __isoc99_scanf total:      1 2.4e-04 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/math/../sysdeps/powerpc/powerpc64/power5+/fpu/s_floor.S"
+ * 
+ *      1 2.4e-04
+ */
+
+
+ /* __floor_power5plus total:      1 2.4e-04 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/math/../sysdeps/powerpc/powerpc64/power5+/fpu/s_ceil.S"
+ * 
+ *      1 2.4e-04
+ */
+
+
+ /* __ceil_power5plus total:      1 2.4e-04 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/malloc/morecore.c"
+ * 
+ *      1 2.4e-04
+ */
+
+
+ /* __default_morecore total:      1 2.4e-04 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/elf/dl-lookup.c"
+ * 
+ *      1 2.4e-04
+ */
+
+
+ /* do_lookup_x total:      1 2.4e-04 */
+/* 
+ * Total samples for file : "/build/glibc-MIxKfm/glibc-2.27/csu/../sysdeps/powerpc/powerpc64/crti.S"
+ * 
+ *      1 2.4e-04
+ */
+
+
+ /* _init total:      1 2.4e-04 */
