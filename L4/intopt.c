@@ -518,7 +518,7 @@ struct node_t* extend(struct node_t* p, int m, int n, double** a, double* b, dou
     memcpy(q->min, p->min, n * sizeof(double));
     memcpy(q->max, p->max, n * sizeof(double));
     for (i = 0; i < m; i++) {
-        memcpy(q->a[i], a[i], n);
+        memcpy(q->a[i], a[i], n * sizeof(double));
     }
     memcpy(q->b, b, m * sizeof(double));
     memcpy(q->c, c, n * sizeof(double));
