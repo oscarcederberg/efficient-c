@@ -236,7 +236,9 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
         }
     }
 
-    return s->y;
+    double result = s->y;
+    free(s);
+    return result;
 }
 
 void pivot(struct simplex_t* s, int row, int col) {
