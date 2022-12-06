@@ -1,0 +1,48 @@
+# Lab 5
+
+## Clock cycles per iteration
+
+### Instructions
+```c
+for (i = 0; i < N; i += 1)
+	a[i] = b[i] + c[i];
+```
+
+for each iteration, the following has to be done (with naive estimate of instructions called for each part):
+1. check if i < N (load i, load N, compare, jump)
+2. increment i (load i, add 1, store i)
+3. add b[i] + c[i] (load i, load b[i], load i, load c[i], add)
+4. store to a[i] (load i, store a[i])
+5. return to 1. (jump)
+
+in our estimate, we find 15 instructions per iteration. different instructions would most likely hav different clock cycles.
+
+### objdump
+```
+0000000010000420 <main>:
+    10000420:   02 10 40 3c     lis     r2,4098
+    10000424:   00 7f 42 38     addi    r2,r2,32512
+    10000428:   64 00 c0 38     li      r6,100
+    1000042c:   00 00 00 60     nop
+    10000430:   78 87 e2 38     addi    r7,r2,-30856
+    10000434:   00 00 00 60     nop
+    10000438:   38 81 02 39     addi    r8,r2,-32456
+    1000043c:   00 00 00 60     nop
+    10000440:   58 84 42 39     addi    r10,r2,-31656
+    10000444:   00 00 20 39     li      r9,0
+    10000448:   a6 03 c9 7c     mtctr   r6
+    1000044c:   14 00 00 48     b       10000460 <main+0x40>
+    10000450:   00 00 00 60     nop
+    10000454:   00 00 00 60     nop
+    10000458:   00 00 00 60     nop
+    1000045c:   00 00 42 60     ori     r2,r2,0
+    10000460:   ae 4c 08 7c     lfdx    f0,r8,r9
+    10000464:   ae 4c 8a 7d     lfdx    f12,r10,r9
+    10000468:   2a 60 00 fc     fadd    f0,f0,f12
+    1000046c:   ae 4d 07 7c     stfdx   f0,r7,r9
+    10000470:   08 00 29 39     addi    r9,r9,8
+    10000474:   ec ff 00 42     bdnz    10000460 <main+0x40>
+    10000478:   00 00 60 38     li      r3,0
+    1000047c:   20 00 80 4e     blr
+```
+from this we can gather that in actuality the instruction cound is 6.
