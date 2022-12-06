@@ -75,3 +75,8 @@ result: 633.000000
 ==21155== LL misses:            166,262  (        84,049 rd   +        82,213 wr)
 ==21155== LL miss rate:             0.0% (           0.0%     +           0.0%  )
 ```
+I refs = instructions
+Drd = cache reads
+Dwr = cache writes
+from above we can see that there is not a lot of cache misses (highest it D1, with a miss rate of 0.1%)\
+
