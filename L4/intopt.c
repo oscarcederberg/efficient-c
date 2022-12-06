@@ -356,7 +356,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     }
 
     n = s->n = s->n - 1;
-    double t[n];
+    double* t = (double*)calloc(n, sizeof(double));
 
     int next_k;
     for (k = 0; k < n; k++) {
@@ -391,6 +391,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
         s->c[i] = t[i];
     }
 
+    free(t);
     free(s->x);
 
     return 1;
