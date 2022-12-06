@@ -194,6 +194,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
 
     if (!initial(s, m, n, a, b, c, x, y, var)) {
         free(s->var);
+        free(s);
         return NAN; //not a number.
     }
 
@@ -208,6 +209,7 @@ double xsimplex(int m, int n, double** a, double* b, double* c, double* x, doubl
 
         if (row < 0) {
             free(s->var);
+            free(s);
             return INFINITY; //unbounded.
         }
 
