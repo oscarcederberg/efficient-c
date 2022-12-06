@@ -320,7 +320,7 @@ int initial(struct simplex_t* s, int m, int n, double** a, double* b, double* c,
     if (i >= n) {
         // x_{n+m} is basic. find good nonbasic.
         for (j = k = 0; k < n; k++) {
-            printf("|%lf| > |%lf|\n", s->a[i - n][k], s->a[i - n][j]);
+            //printf("|%lf| > |%lf|\n", s->a[i - n][k], s->a[i - n][j]);
             if (fabs(s->a[i - n][k]) > fabs(s->a[i - n][j])) {
                 j = k;
             }
@@ -611,13 +611,13 @@ int branch(struct node_t* q, double z) {
             q->h = h;
             q->xh = q->x[h];
 
-            for (int i = 0; i < q->m + 1; i++) {
-                free(q->a[i]);
-            }
-            free(q->a);
-            free(q->b);
-            free(q->c);
-            free(q->x);
+            // for (int i = 0; i < q->m + 1; i++) {
+            //     free(q->a[i]);
+            // }
+            // free(q->a);
+            // free(q->b);
+            // free(q->c);
+            // free(q->x);
 
             return 1;
         }
@@ -671,9 +671,7 @@ double intopt(int m, int n, double** a, double* b, double* c, double* x) {
         struct node_t* p = pop(h);
         succ(p, h, m, n, a, b, c, p->h, 1, floor(p->xh), &z, x);
         succ(p, h, m, n, a, b, c, p->h, -1, -ceil(p->xh), &z, x);
-        free(p->min);
-        free(p->max);
-        free(p);
+        free_node(p);
     }
 
     free_set(h);
@@ -753,11 +751,6 @@ struct node_t* pop(struct set_t* h) {
 
 
 void free_set(struct set_t* h) {
-    for (int i = 0; i < h->alloc; i++) {
-        if (h->nodes[i] != NULL) {
-            //free_node(h->nodes[i]);
-        }
-    }
     free(h->nodes);
     free(h);
 }
