@@ -48,6 +48,14 @@ in our estimate, we find 15 instructions per iteration. different instructions w
 from this we can gather that in actuality the instruction cound is 6.
 
 ### scrollpv
-Clock cycle: 49 -> 341\
+#### a
+Clock cycles: 49 -> 341\
 Total cycles: 292\
 Cycles per iteration: 2.92
+
+#### b
+Clock cycles: 51 -> 654\
+Total cycles: 603 ->
+Cycles per iteration: 6.03
+
+the discrepency is most likely from all the red s's. "cannot issue sources not ready".
