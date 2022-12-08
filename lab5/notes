@@ -59,3 +59,6 @@ Total cycles: 603 ->
 Cycles per iteration: 6.03
 
 the discrepency is most likely from all the red s's. "cannot issue sources not ready".
+
+### Rename register
+Renaming registers is when registers are renamed to allow out-of-order execution. There might be registers that are used in several branches or parts of the code that are not dependant on each other. By using a different register these parts can be run without having to wait for each other.
