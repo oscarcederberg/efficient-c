@@ -46,3 +46,8 @@ in our estimate, we find 15 instructions per iteration. different instructions w
     1000047c:   20 00 80 4e     blr
 ```
 from this we can gather that in actuality the instruction cound is 6.
+
+### scrollpv
+Clock cycle: 49 -> 341\
+Total cycles: 292\
+Cycles per iteration: 2.92
