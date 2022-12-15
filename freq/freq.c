@@ -2,33 +2,60 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
-struct list_t {
-    char* word;
+#define MAX_CHARS 64
+
+struct word_t {
     size_t length;
-    int count;
-    struct list_t* next;
+    char *string;
 };
 
-struct list_t* first;
-int current_line;
-int current_char;
-char* current_word;
-size_t current_word_count;
-size_t allocated_size = 1;
+struct list_t {
+    struct word_t *word;
+    int count;
+    struct list_t *next;
+};
 
-void print(char* word, int length) {
-    for (size_t i = 0; i < length; ++i)
-    {
-        printf("%c", word[i]);
+struct list_t  *first;
+
+void free_word(struct word_t *word) {
+    free(word->string);
+    free(word);
+}
+
+void free_list() {
+    struct list_t* temp;
+    struct list_t *entry = first;
+
+    while (entry) {
+        temp = entry->next;
+        free_word(entry->word);
+        free(entry);
+        entry = temp;
     }
 }
 
-struct list_t* find(char* word, size_t length) {
-    struct list_t* entry = first;
+void print_word(struct word_t *word) {
+    for (size_t i = 0; i < word->length; ++i)
+    {
+        printf("%c", word->string[i]);
+    }
+}
+
+void print_list() {
+    struct list_t *entry = first;
+    while(entry) {
+        printf("{word: %s, length: %lu, count: %d}\n", entry->word->string, entry->word->length, entry->count);
+        entry = entry->next;
+    }
+}
+
+struct list_t *find(struct word_t *word) {
+    struct list_t *entry = first;
 
     while (entry) {
-        if (entry->length == length && strncmp(entry->word, word, length)) {
+        if (entry->word->length == word->length && strncmp(entry->word->string, word->string, word->length) == 0) {
             return entry;
         }
 
@@ -38,8 +65,8 @@ struct list_t* find(char* word, size_t length) {
     return NULL;
 }
 
-void increment(char* word, size_t length) {
-    struct list_t* entry = find(word, length);
+void increment(struct word_t *word) {
+    struct list_t *entry = find(word);
 
     if (entry) {
         entry->count += 1;
@@ -48,26 +75,26 @@ void increment(char* word, size_t length) {
             printf("added ");
         else
             printf("counted ");
-        print(word, length);
+        print_word(word);
         printf("\n");
+        free_word(word);
     } else {
-        entry = malloc(sizeof(struct list_t));
-        entry->word = malloc(length * sizeof(char));
-        entry->length = length;
+        entry = (struct list_t *) malloc(sizeof(struct list_t));
+        entry->word = word;
         entry->count = 1;
         entry->next = first;
         first = entry;
 
         printf("added ");
-        print(word, length);
+        print_word(word);
         printf("\n");
     }
 }
 
-void decerment(char* word, size_t length) {
-    struct list_t* entry = find(word, length);
+void delete(struct word_t *word) {
+    struct list_t *entry = find(word);
     printf("trying to delete ");
-    print(word, length);
+    print_word(word);
 
     if (entry && entry->count > 0) {
         entry->count = 0;
@@ -75,30 +102,86 @@ void decerment(char* word, size_t length) {
     } else {
         printf(": not found\n");
     }
+
+    free_word(word);
+}
+
+struct word_t *get_word() {
+    unsigned int length;
+    struct word_t *word = calloc(1, sizeof(struct word_t));
+    char current_char = getchar();
+
+    for (length = 0; !isspace(current_char) && current_char != EOF; length++) {
+        word->string = (char *) realloc(word->string, (length + 2) * sizeof(char));
+        word->string[length] = current_char;
+        current_char = getchar();
+    }
+
+    if (length == 0) {
+        free_word(word);
+        return NULL;
+    }
+
+    word->string[length] = '\0';
+    word->length = length;
+    return word;
+}
+
+int is_prime(unsigned int number) {
+    if (number == 1) {
+        return 0;
+    }
+
+    unsigned int max = sqrt(number);
+
+    for (unsigned int i = 2; i <= max; i++) {
+        if (number % i == 0) {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+int compare_words(struct word_t *first, struct word_t *second) {
+    int length = first->length > second->length ? first->length : second->length;
+    return strncmp(first->string, second->string, length);
+}
+
+struct list_t *find_most_frequent_entry() {
+    struct list_t *most_frequent = first;
+    struct list_t *entry = first->next;
+
+    while (entry) {
+        if (entry->count == most_frequent->count && compare_words(entry->word, most_frequent->word) < 0) {
+            most_frequent = entry;
+        } else if (entry->count > most_frequent->count) {
+            most_frequent = entry;
+        }
+
+        entry = entry->next;
+    }
+
+    return most_frequent;
 }
 
 int main(void) {
-    current_line = 1;
+    unsigned int current_line = 0;
+    struct word_t *word = get_word();
 
-	while (1) {
-		current_char = getchar();
+    while (word) {
+        current_line++;
+        if (is_prime(current_line)) {
+            delete(word);
+        } else {
+            increment(word);
+        }
 
-        if(current_char == EOF){
-			break;
-		}
+        word = get_word();
+    }
 
-        current_word = malloc(allocated_size * sizeof(char));
-		current_word_count = 0;
+    struct list_t *entry = find_most_frequent_entry();
+    printf("result: %s %u\n", entry->word->string, entry->count);
 
-		while(current_char != '\n'){
-			if(current_word_count > allocated_size){
-				allocated_size *= 2;
-				current_word = realloc(current_word, sizeof(char)*allocated_size);
-			}
-
-			current_word[current_word_count - 1] = current_char;
-			current_char = getchar();
-		}
-
-	}
+    free_list();
 }
