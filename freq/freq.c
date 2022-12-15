@@ -109,7 +109,7 @@ void delete(struct word_t *word) {
 struct word_t *get_word() {
     unsigned int length;
     struct word_t *word = calloc(1, sizeof(struct word_t));
-    char current_char = getchar();
+    int current_char = getchar();
 
     for (length = 0; !isspace(current_char) && current_char != EOF; length++) {
         word->string = (char *) realloc(word->string, (length + 2) * sizeof(char));
