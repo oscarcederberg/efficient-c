@@ -27,7 +27,7 @@ poly_t*	new_poly_from_string(const char* string){
         coef = 1;
         expo = 0;
         sign = 1;
-        
+
         // check sign
         if(current_char == '-'){
             sign = -1;
@@ -102,7 +102,7 @@ poly_t*	mul(poly_t* p1, poly_t* p2){
     int  p2_terms = p2->terms;
     int* p2_coefs = p2->coefs;
     int* p2_expos = p2->expos;
-    
+
     int terms_max = p1_terms * p2_terms;
 
     int* coefs = (int*)calloc(terms_max, sizeof(int));
@@ -141,14 +141,14 @@ poly_t*	mul(poly_t* p1, poly_t* p2){
                 coefs[y] += coef;
                 break;
             }
-        } 
+        }
     }
 
     // bubble sort with two arrays
     int largest_expo, last_expo = __INT_MAX__;
     int terms_after_sort = 0;
     for (x = 0; x < terms_after_add; ++x){
-        i = 0;    
+        i = 0;
         largest_expo = 0;
         for (y = 0; y < terms_after_add; ++y)
         {
@@ -186,8 +186,8 @@ void print_poly(poly_t* p){
         coef = p->coefs[i];
         expo = p->expos[i];
 
-        //printf("%dx^%d", coef, expo);       
-        
+        //printf("%dx^%d", coef, expo);
+
         if(coef < 0){
             printf("- ");
             coef *= -1;
@@ -205,11 +205,11 @@ void print_poly(poly_t* p){
         if(expo > 1){
             printf("^%d", expo);
         }
-        
+
         if(i != terms - 1){
             printf(" ");
         }else{
             printf("\n");
         }
-    } 
+    }
 }

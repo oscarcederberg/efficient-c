@@ -30,7 +30,7 @@ int peek(int* out){
 	if(isEmpty()){
 		return 0;
 	}
-	
+
 	*out = stack[current_index];
 	return 1;
 }
@@ -39,7 +39,7 @@ int pop(int* out){
 	if(isEmpty()){
 		return 0;
 	}
-	
+
 	*out = stack[current_index];
 	current_index--;
 	return 1;
@@ -91,11 +91,11 @@ int main(void){
 			#if DEBUG
 			if(current_char == '\n'){
 				printf("[\\n=10]");
-			}else{	
+			}else{
 				printf("[%c=%d]",current_char, current_char);
 			}
 			#endif
-			
+
 			if(isdigit(current_char)){
 				if(isFull()){
 					printf("error at %c\n", current_char);
@@ -111,7 +111,7 @@ int main(void){
 
 					current_char = getchar();
 				}
-				
+
 				if(!push(parsed_int)){
 					printf("error at %d\n", parsed_int);
 					error();
@@ -119,7 +119,7 @@ int main(void){
 				}
 			}
 
-			if(current_char != ' '){	
+			if(current_char != ' '){
 				if(current_char == '\n'){
 					if(!pop(&term_1) || !isEmpty()){
 						printf("error at \\n\n");
@@ -128,7 +128,7 @@ int main(void){
 					}else{
 						printf("%d\n", term_1);
 					}
-					
+
 					current_line++;
 					break;
 				}else if(current_char == EOF){
